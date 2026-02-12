@@ -1,0 +1,125 @@
+<!-- Dialog Layout Template -->
+<!-- Metadata review dialog with grey category bars and floating controls -->
+
+<div class="layout-container layout-dialog" [style.background]="backgroundColor || null">
+  
+  <!-- ===== INPUT AREA (optional) ===== -->
+  <app-input-area
+    *ngIf="showInputArea"
+    [userText]="userText"
+    [sourceUrl]="sourceUrl"
+    [nodeId]="nodeId"
+    [inputMode]="inputMode"
+    [isExtracting]="state?.isExtracting ?? false"
+    (userTextChange)="userTextChange.emit($event)"
+    (sourceUrlChange)="sourceUrlChange.emit($event)"
+    (nodeIdChange)="nodeIdChange.emit($event)"
+    (startExtraction)="startExtraction.emit()"
+    (startUrlExtraction)="startUrlExtraction.emit($event)"
+    (startNodeIdExtraction)="startNodeIdExtraction.emit($event)"
+    (inputModeChange)="inputModeChange.emit($event)"
+    (reset)="reset.emit()">
+  </app-input-area>
+
+  <!-- ===== STATUS BAR (optional) ===== -->
+  <app-status-bar
+    *ngIf="showStatusBar && state?.totalFields"
+    [state]="state"
+    [contentTypes]="contentTypes"
+    (selectContentType)="selectContentType.emit($event)">
+  </app-status-bar>
+
+  <!-- ===== EXTRACTION ERROR ===== -->
+  <div class="extraction-error" *ngIf="state?.extractionError">
+    <mat-icon>error_outline</mat-icon>
+    <span>{{ state!.extractionError }}</span>
+  </div>
+
+  <!-- ===== FIELD GROUPS ===== -->
+  <section class="fields-section" *ngIf="state?.fieldGroups?.length">
+    <ng-container *ngFor="let group of state?.fieldGroups; trackBy: trackByGroupId">
+      <div class="field-group" 
+           *ngIf="(group.isCore && showCoreFields) || (!group.isCore && showSpecialFields)">
+        
+        <!-- Grey bar — edge-to-edge -->
+        <div class="group-header">
+          <mat-icon class="group-icon">{{ getGroupIcon(group) }}</mat-icon>
+          <h3>{{ group.label }}</h3>
+        </div>
+        
+        <!-- Indented fields -->
+        <div class="group-fields"
+             [class.columns-2]="columns === 2"
+             [class.columns-3]="columns === 3"
+             [class.columns-4]="columns === 4">
+          <app-field
+            *ngFor="let field of getFlattenedFields(group.fields); trackBy: trackByFieldId"
+            [field]="field"
+            [readonly]="readonly"
+            [showActions]="showFieldActions"
+            [highlightAi]="highlightAi"
+            (valueChange)="fieldValueChange.emit({ fieldId: field.fieldId, value: $event })">
+          </app-field>
+        </div>
+      </div>
+    </ng-container>
+  </section>
+
+  <!-- ===== EMPTY STATE ===== -->
+  <section class="empty-state" *ngIf="!state?.fieldGroups?.length && !state?.isExtracting">
+    <mat-icon>info_outline</mat-icon>
+    <p>{{ 'EMPTY_STATE.NO_DATA' | translate }}</p>
+  </section>
+
+  <!-- ===== FLOATING CONTROLS ===== -->
+  <div class="floating-controls" *ngIf="showFloatingControls">
+    <div class="floating-content-type">
+      <div class="split-button">
+        <div class="split-button-label">
+          <mat-icon>{{ state?.contentTypeIcon || 'category' }}</mat-icon>
+          <span>{{ state?.contentTypeLabel || ('CONTENT_TYPE.SELECT' | translate) }}</span>
+        </div>
+        <button 
+          mat-icon-button
+          [matMenuTriggerFor]="floatingCtMenu">
+          <mat-icon>expand_more</mat-icon>
+        </button>
+      </div>
+      
+      <mat-menu #floatingCtMenu="matMenu">
+        <button 
+          mat-menu-item 
+          *ngFor="let ct of contentTypes"
+          (click)="selectContentType.emit(ct)"
+          [class.active]="state?.contentTypeLabel === ct.label">
+          <span>{{ ct.label }}</span>
+        </button>
+      </mat-menu>
+    </div>
+
+    <div class="action-buttons" *ngIf="!showContentTypeOnly">
+      <button 
+        mat-icon-button
+        *ngIf="showUploadButton"
+        [disabled]="!state?.filledFields"
+        (click)="upload.emit()"
+        [matTooltip]="'CONTROLS.UPLOAD' | translate">
+        <mat-icon>cloud_upload</mat-icon>
+      </button>
+      <button 
+        mat-icon-button
+        [disabled]="!state?.filledFields"
+        (click)="submit.emit()"
+        [matTooltip]="'CONTROLS.SAVE' | translate">
+        <mat-icon>save</mat-icon>
+      </button>
+      <button 
+        mat-icon-button
+        (click)="reset.emit()"
+        [matTooltip]="'CONTROLS.RESET' | translate">
+        <mat-icon>refresh</mat-icon>
+      </button>
+    </div>
+  </div>
+
+</div>

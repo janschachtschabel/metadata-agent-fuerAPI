@@ -1,0 +1,114 @@
+/**
+ * Default Layout Styles
+ * Full-featured editing layout
+ */
+
+@use 'sass:color';
+@use 'layout-variables' as vars;
+@use 'layout-mixins' as mixins;
+
+.layout-default {
+  @include mixins.layout-container;
+  @include mixins.layout-container-borderless;
+  
+  // Input Section
+  .input-section {
+    @include mixins.section-base;
+    background: vars.$layout-surface-variant;
+    margin-bottom: vars.$section-gap;
+    
+    .mat-mdc-form-field {
+      width: 100%;
+    }
+    
+    .header-actions {
+      display: flex;
+      gap: vars.$layout-spacing-sm;
+      margin-top: vars.$layout-spacing-sm;
+      
+      button {
+        flex: 1;
+        
+        @include mixins.responsive-sm {
+          flex: none;
+          width: 100%;
+        }
+      }
+    }
+  }
+  
+  // Status Bar
+  .status-bar-section {
+    @include mixins.section-base;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: vars.$status-bar-height;
+    background: vars.$layout-surface;
+    border-bottom: 1px solid vars.$layout-surface-variant;
+    
+    .content-type-selector {
+      display: flex;
+      align-items: center;
+      gap: vars.$layout-spacing-sm;
+    }
+    
+    .progress-section {
+      display: flex;
+      align-items: center;
+      gap: vars.$layout-spacing-md;
+      
+      .field-stats {
+        display: flex;
+        gap: vars.$layout-spacing-sm;
+        font-size: 0.875rem;
+      }
+    }
+  }
+  
+  // Floating Controls
+  .floating-controls {
+    display: flex;
+    align-items: center;
+    gap: vars.$controls-gap;
+    padding: vars.$layout-spacing-sm vars.$layout-spacing-md;
+  }
+  
+  // Fields Section
+  .fields-section {
+    flex: 1;
+    overflow-y: auto;
+    padding: vars.$section-padding;
+    
+    .field-group {
+      margin-bottom: vars.$field-gap;
+      
+      .group-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: vars.$layout-spacing-sm vars.$layout-spacing-md;
+        background: vars.$layout-surface-variant;
+        border-radius: vars.$layout-border-radius;
+        cursor: pointer;
+        
+        &:hover {
+          background: color.adjust(#e7e0ec, $lightness: -5%);
+        }
+      }
+      
+      .group-fields {
+        padding: vars.$layout-spacing-md 0;
+      }
+    }
+  }
+  
+  // Footer
+  .footer-section {
+    @include mixins.section-base;
+    display: flex;
+    justify-content: flex-end;
+    gap: vars.$layout-spacing-sm;
+    border-top: 1px solid vars.$layout-surface-variant;
+  }
+}

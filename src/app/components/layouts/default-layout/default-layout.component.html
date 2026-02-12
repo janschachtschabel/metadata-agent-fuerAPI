@@ -1,0 +1,299 @@
+<!-- Default Layout Template -->
+<!-- Full editing mode for Local, Bookmarklet, Extension, Vercel -->
+
+<div class="layout-container layout-default" [style.background]="backgroundColor || null">
+  
+  <!-- ===== INPUT AREA ===== -->
+  <section class="input-section" *ngIf="showInputArea">
+    
+    <!-- Mode Switcher -->
+    <div class="mode-switcher">
+      <mat-button-toggle-group 
+        [value]="inputMode"
+        (change)="inputModeChange.emit($event.value)"
+        appearance="standard"
+        hideSingleSelectionIndicator>
+        <mat-button-toggle value="text" [matTooltip]="'INPUT.MODE_TEXT' | translate">
+          <mat-icon>description</mat-icon>
+          <span class="mode-label">{{ 'INPUT.MODE_TEXT' | translate }}</span>
+        </mat-button-toggle>
+        <mat-button-toggle value="url" [matTooltip]="'INPUT.MODE_URL' | translate">
+          <mat-icon>link</mat-icon>
+          <span class="mode-label">{{ 'INPUT.MODE_URL' | translate }}</span>
+        </mat-button-toggle>
+        <mat-button-toggle value="nodeId" [matTooltip]="'INPUT.MODE_NODE_ID' | translate">
+          <mat-icon>tag</mat-icon>
+          <span class="mode-label">{{ 'INPUT.MODE_NODE_ID' | translate }}</span>
+        </mat-button-toggle>
+      </mat-button-toggle-group>
+    </div>
+
+    <!-- Text Input (default) -->
+    <ng-container *ngIf="inputMode === 'text'">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>{{ 'INPUT.PLACEHOLDER' | translate }}</mat-label>
+        <textarea
+          matInput
+          rows="4"
+          [ngModel]="userText"
+          (ngModelChange)="userTextChange.emit($event)"
+          [disabled]="state?.isExtracting ?? false"
+          (keydown.enter)="onEnterKey($event)">
+        </textarea>
+      </mat-form-field>
+    </ng-container>
+    
+    <!-- URL Input -->
+    <ng-container *ngIf="inputMode === 'url'">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>{{ 'INPUT.URL_PLACEHOLDER' | translate }}</mat-label>
+        <input
+          matInput
+          type="url"
+          [ngModel]="sourceUrl"
+          (ngModelChange)="sourceUrlChange.emit($event)"
+          [disabled]="state?.isExtracting ?? false"
+          placeholder="https://example.com/resource">
+        <mat-icon matPrefix>link</mat-icon>
+      </mat-form-field>
+    </ng-container>
+    
+    <!-- NodeId Input -->
+    <ng-container *ngIf="inputMode === 'nodeId'">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>{{ 'INPUT.NODE_ID_PLACEHOLDER' | translate }}</mat-label>
+        <input
+          matInput
+          type="text"
+          [ngModel]="nodeId"
+          (ngModelChange)="nodeIdChange.emit($event)"
+          [disabled]="state?.isExtracting ?? false"
+          placeholder="abc123-def456-...">
+        <mat-icon matPrefix>tag</mat-icon>
+      </mat-form-field>
+    </ng-container>
+    
+    <div class="header-actions">
+      <!-- Text Extraction Button -->
+      <button 
+        *ngIf="inputMode === 'text'"
+        mat-flat-button
+        class="btn-extract"
+        [disabled]="!userText.trim() || (state?.isExtracting ?? false)"
+        (click)="startExtraction.emit()">
+        <mat-icon *ngIf="!state?.isExtracting">play_arrow</mat-icon>
+        <mat-icon *ngIf="state?.isExtracting">hourglass_empty</mat-icon>
+        <span *ngIf="!state?.isExtracting">{{ 'INPUT.START_EXTRACTION' | translate }}</span>
+        <span *ngIf="state?.isExtracting">{{ 'INPUT.EXTRACTING' | translate }}</span>
+      </button>
+      
+      <!-- URL Extraction Button -->
+      <button 
+        *ngIf="inputMode === 'url'"
+        mat-flat-button
+        class="btn-extract"
+        [disabled]="!sourceUrl.trim() || (state?.isExtracting ?? false)"
+        (click)="startUrlExtraction.emit(sourceUrl)">
+        <mat-icon *ngIf="!state?.isExtracting">language</mat-icon>
+        <mat-icon *ngIf="state?.isExtracting">hourglass_empty</mat-icon>
+        <span *ngIf="!state?.isExtracting">{{ 'INPUT.EXTRACT_FROM_URL' | translate }}</span>
+        <span *ngIf="state?.isExtracting">{{ 'INPUT.EXTRACTING' | translate }}</span>
+      </button>
+      
+      <!-- NodeId Extraction Button -->
+      <button 
+        *ngIf="inputMode === 'nodeId'"
+        mat-flat-button
+        class="btn-extract"
+        [disabled]="!nodeId.trim() || (state?.isExtracting ?? false)"
+        (click)="startNodeIdExtraction.emit(nodeId)">
+        <mat-icon *ngIf="!state?.isExtracting">cloud_download</mat-icon>
+        <mat-icon *ngIf="state?.isExtracting">hourglass_empty</mat-icon>
+        <span *ngIf="!state?.isExtracting">{{ 'INPUT.EXTRACT_FROM_NODE' | translate }}</span>
+        <span *ngIf="state?.isExtracting">{{ 'INPUT.EXTRACTING' | translate }}</span>
+      </button>
+      
+      <button 
+        mat-flat-button
+        class="btn-reset"
+        (click)="reset.emit()"
+        [disabled]="state?.isExtracting ?? false">
+        <mat-icon>refresh</mat-icon>
+        {{ 'INPUT.RESET' | translate }}
+      </button>
+    </div>
+  </section>
+
+  <!-- ===== EXTRACTION ERROR ===== -->
+  <div class="extraction-error" *ngIf="state?.extractionError">
+    <mat-icon>error_outline</mat-icon>
+    <span>{{ state!.extractionError }}</span>
+    <button mat-icon-button (click)="onDismissError()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- ===== STATUS BAR ===== -->
+  <section class="status-bar" *ngIf="showStatusBar && state?.totalFields">
+    <!-- Content Type Selector -->
+    <div class="content-type-selector">
+      <div class="split-button">
+        <div class="split-button-label">
+          <mat-icon>{{ state?.contentTypeIcon || 'category' }}</mat-icon>
+          <span>{{ state?.contentTypeLabel || ('CONTENT_TYPE.NOT_DETECTED' | translate) }}</span>
+        </div>
+        <button 
+          mat-icon-button
+          [matMenuTriggerFor]="contentTypeMenu"
+          [disabled]="state?.isExtracting ?? false"
+          class="split-button-trigger">
+          <mat-icon>expand_more</mat-icon>
+        </button>
+      </div>
+      
+      <mat-menu #contentTypeMenu="matMenu">
+        <button 
+          mat-menu-item 
+          *ngFor="let ct of contentTypes"
+          (click)="selectContentType.emit(ct)"
+          [class.active]="state?.contentTypeLabel === ct.label">
+          <span>{{ ct.label }}</span>
+          <mat-icon *ngIf="state?.contentTypeLabel === ct.label">check</mat-icon>
+        </button>
+      </mat-menu>
+    </div>
+
+    <!-- Field Stats -->
+    <div class="field-stats">
+      <span class="stat-badge">
+        {{ 'PROGRESS.FIELDS' | translate }}: {{ state?.filledFields }}/{{ state?.totalFields }}
+      </span>
+      <span class="stat-badge required" 
+            [class.complete]="getRequiredFieldsStatus().filled === getRequiredFieldsStatus().total">
+        {{ 'PROGRESS.REQUIRED' | translate }}: {{ getRequiredFieldsStatus().filled }}/{{ getRequiredFieldsStatus().total }}
+      </span>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="progress-bar-wrapper">
+      <mat-progress-bar 
+        mode="determinate"
+        [value]="getProgressPercent()">
+      </mat-progress-bar>
+      <mat-icon class="progress-icon" [class.complete]="getProgressPercent() === 100">
+        {{ getProgressPercent() === 100 ? 'check_circle' : 'hourglass_empty' }}
+      </mat-icon>
+    </div>
+  </section>
+
+  <!-- ===== FIELD GROUPS ===== -->
+  <section class="fields-section" *ngIf="state?.fieldGroups?.length">
+    <ng-container *ngFor="let group of state?.fieldGroups; trackBy: trackByGroupId">
+      <div class="field-group" 
+           *ngIf="(group.isCore && showCoreFields) || (!group.isCore && showSpecialFields)">
+        
+        <!-- Group Header -->
+        <div class="group-header" (click)="group.collapsed = !group.collapsed">
+          <div class="group-title">
+            <mat-icon>description</mat-icon>
+            <h3>{{ group.label }}</h3>
+          </div>
+          <div class="group-info" *ngIf="showFieldActions">
+            <span class="schema-badge">{{ group.schemaName || 'Core' }}</span>
+            <span class="count">{{ getFilledCount(group) }}/{{ getFlattenedFields(group.fields).length }}</span>
+            <span class="count-label">{{ 'PROGRESS.FIELDS_RECOGNIZED' | translate }}</span>
+          </div>
+          <mat-icon class="expand-icon">{{ group.collapsed ? 'expand_more' : 'expand_less' }}</mat-icon>
+        </div>
+        
+        <!-- Group Fields (multi-column grid) -->
+        <div class="group-fields" 
+             [class.columns-2]="columns === 2"
+             [class.columns-3]="columns === 3"
+             [class.columns-4]="columns === 4"
+             *ngIf="!group.collapsed">
+          <app-field
+            *ngFor="let field of getFlattenedFields(group.fields); trackBy: trackByFieldId"
+            [field]="field"
+            [readonly]="readonly"
+            [showActions]="showFieldActions"
+            [highlightAi]="highlightAi"
+            (valueChange)="onFieldChange(field.fieldId, $event)">
+          </app-field>
+        </div>
+      </div>
+    </ng-container>
+  </section>
+
+  <!-- ===== EMPTY STATE ===== -->
+  <section class="empty-state" *ngIf="!state?.fieldGroups?.length && !state?.isExtracting">
+    <div class="empty-content">
+      <mat-icon>edit_note</mat-icon>
+      <h3>{{ 'EMPTY_STATE.TITLE' | translate }}</h3>
+      <p>{{ 'EMPTY_STATE.MESSAGE' | translate }}</p>
+    </div>
+  </section>
+
+  <!-- ===== FLOATING CONTROLS ===== -->
+  <div class="floating-controls" *ngIf="showFloatingControls">
+    <!-- Content Type (when fields exist) -->
+    <div class="floating-content-type" *ngIf="state?.totalFields">
+      <div class="split-button">
+        <div class="split-button-label">
+          <mat-icon>{{ state?.contentTypeIcon || 'category' }}</mat-icon>
+          <span>{{ state?.contentTypeLabel || ('CONTENT_TYPE.NOT_DETECTED' | translate) }}</span>
+        </div>
+        <button 
+          mat-icon-button
+          [matMenuTriggerFor]="floatingCtMenu"
+          [disabled]="state?.isExtracting ?? false">
+          <mat-icon>expand_more</mat-icon>
+        </button>
+      </div>
+      
+      <mat-menu #floatingCtMenu="matMenu">
+        <button 
+          mat-menu-item 
+          *ngFor="let ct of contentTypes"
+          (click)="selectContentType.emit(ct)">
+          <mat-icon *ngIf="ct.icon">{{ ct.icon }}</mat-icon>
+          <span>{{ ct.label }}</span>
+        </button>
+      </mat-menu>
+    </div>
+    
+    <!-- Action Buttons (hidden when showContentTypeOnly is true) -->
+    <div class="action-buttons" *ngIf="!showContentTypeOnly">
+      <app-json-loader (jsonLoaded)="jsonLoaded.emit($event)"></app-json-loader>
+      
+      <button 
+        mat-icon-button
+        [disabled]="!state?.filledFields"
+        (click)="downloadJson.emit()"
+        [matTooltip]="'CONTROLS.SAVE_JSON' | translate">
+        <mat-icon>save</mat-icon>
+      </button>
+      
+      <button 
+        mat-icon-button
+        *ngIf="showUploadButton"
+        class="upload-btn"
+        [disabled]="!state?.filledFields"
+        (click)="upload.emit()"
+        [matTooltip]="'CONTROLS.UPLOAD' | translate">
+        <mat-icon>cloud_upload</mat-icon>
+      </button>
+      
+      <button 
+        mat-icon-button
+        (click)="reset.emit()"
+        [matTooltip]="'CONTROLS.RESET' | translate">
+        <mat-icon>refresh</mat-icon>
+      </button>
+    </div>
+    
+    <!-- Language Switcher (separate floating pill) -->
+    <app-language-switcher *ngIf="!showContentTypeOnly"></app-language-switcher>
+  </div>
+
+</div>

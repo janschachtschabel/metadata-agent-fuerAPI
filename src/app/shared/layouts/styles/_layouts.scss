@@ -1,0 +1,87 @@
+/**
+ * Layout Styles - Central Import
+ * 
+ * Import this file in your main styles.scss or component styles
+ * to enable all layout CSS classes.
+ */
+
+@use 'layout-variables' as vars;
+@use 'layout-mixins' as mixins;
+
+// Import all layout-specific styles
+@import 'layout-default';
+
+// ===== Compact Layout Modifier =====
+.layout-compact {
+  @include mixins.compact-spacing;
+  
+  .floating-controls {
+    .action-buttons {
+      display: none;
+    }
+  }
+  
+  .field-group {
+    &.collapsed {
+      .group-fields {
+        display: none;
+      }
+    }
+  }
+}
+
+// ===== Embed Layout =====
+.layout-embed {
+  @include mixins.layout-container;
+  @include mixins.layout-container-borderless;
+  @include mixins.compact-spacing;
+  
+  padding: 0;
+  
+  .input-section,
+  .status-bar-section,
+  .floating-controls,
+  .footer-section {
+    @include mixins.section-hidden;
+  }
+  
+  .fields-section {
+    padding: vars.$layout-spacing-sm;
+    
+    .field-group {
+      .group-header {
+        padding: vars.$layout-spacing-xs;
+        background: transparent;
+        cursor: default;
+        
+        .expand-icon {
+          display: none;
+        }
+      }
+    }
+    
+    .canvas-field {
+      .status-icon,
+      .field-actions {
+        display: none;
+      }
+    }
+  }
+}
+
+// ===== Utility Classes =====
+
+.layout-borderless {
+  @include mixins.layout-container-borderless;
+}
+
+.layout-bordered {
+  @include mixins.layout-container-bordered;
+}
+
+// Hide sections via CSS (backup for layout config)
+.hide-input .input-section { @include mixins.section-hidden; }
+.hide-status-bar .status-bar-section { @include mixins.section-hidden; }
+.hide-controls .floating-controls { @include mixins.section-hidden; }
+.hide-footer .footer-section { @include mixins.section-hidden; }
+.hide-field-actions .canvas-field .field-actions { @include mixins.section-hidden; }

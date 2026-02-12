@@ -1,0 +1,212 @@
+/* ============================================
+   Material Design v3 Field Styles
+   Übernommen von metadata-agent-canvas-oeh
+   ============================================ */
+
+.canvas-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+  background: transparent;
+
+  &.status-extracting {
+    animation: pulse 1.6s infinite;
+  }
+
+  .required-marker {
+    color: #ba1a1a;
+    margin-left: 2px;
+  }
+
+  // Main form field
+  .md3-text-field {
+    width: 100%;
+
+    ::ng-deep .mat-mdc-form-field-flex {
+      align-items: center;
+      gap: 6px;
+    }
+
+    ::ng-deep .mat-mdc-text-field-wrapper {
+      border-radius: 12px;
+      background: #ffffff;
+      padding-left: 8px;
+    }
+
+    ::ng-deep .mat-mdc-form-field-infix {
+      padding: 8px 0;
+      min-height: 56px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    ::ng-deep .mat-mdc-form-field-appearance-outline .mat-mdc-notched-outline {
+      --mdc-outlined-text-field-outline-color: #c9cfdd;
+    }
+
+    // Focus state - Corporate Blue
+    &.mat-focused ::ng-deep .mat-mdc-notched-outline .mat-mdc-notched-outline-trailing,
+    &.mat-focused ::ng-deep .mat-mdc-notched-outline .mat-mdc-notched-outline-leading,
+    &.mat-focused ::ng-deep .mat-mdc-notched-outline .mat-mdc-notched-outline-notch {
+      border-color: #003B7C !important;
+      border-width: 2px !important;
+    }
+
+    &.is-disabled ::ng-deep .mat-mdc-text-field-wrapper {
+      background: #f4f6fb;
+    }
+
+    ::ng-deep textarea.mat-mdc-input-element {
+      resize: vertical;
+      min-height: 32px;
+      line-height: 1.5;
+      padding: 4px 0 8px 0;
+      margin: 0;
+      overflow: hidden;
+    }
+  }
+
+  // Dropdown arrow for vocabulary fields
+  .dropdown-arrow {
+    cursor: pointer;
+    color: #5b667a;
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: #1f2a3d;
+    }
+  }
+
+  // Inline chips + input wrapper (chips and textarea on the same line)
+  .inline-chips-input {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 4px 0;
+
+    textarea {
+      flex: 1 1 80px;
+      min-width: 80px;
+    }
+  }
+
+  .chip-container {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 6px;
+
+    mat-chip {
+      --mdc-chip-elevated-container-color: #e2e8f6;
+      --mdc-chip-label-text-color: #1f2a3d;
+      font-size: 13px;
+      font-weight: 500;
+
+      &:hover {
+        --mdc-chip-elevated-container-color: #d4def4;
+      }
+    }
+  }
+
+
+
+  // Radio button fields (rendered outside mat-form-field)
+  .radio-field-label {
+    font-size: 13px;
+    color: rgba(0, 0, 0, 0.6);
+    margin-bottom: 8px;
+    font-weight: 400;
+  }
+
+  .radio-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 0 0 4px 0;
+
+    mat-radio-button {
+      font-size: 14px;
+
+      ::ng-deep .mdc-radio__outer-circle {
+        border-color: #9e9e9e !important;
+      }
+      ::ng-deep .mdc-radio__inner-circle {
+        border-color: #757575 !important;
+      }
+    }
+  }
+}
+
+// Placeholder text styling (light gray, inside field)
+.canvas-field {
+  ::ng-deep input::placeholder,
+  ::ng-deep textarea::placeholder,
+  ::ng-deep .mat-mdc-select-placeholder {
+    color: #b0b8c4 !important;
+    font-weight: 400;
+    font-style: normal;
+  }
+}
+
+// Status/warning/info hints below field
+.field-warning {
+  color: #e65100 !important;
+  font-size: 12px;
+}
+
+.field-status {
+  font-size: 12px;
+  color: #5f6d7e;
+
+  &.extracting {
+    color: #006693;
+  }
+}
+
+// Support text below field (outside mat-form-field)
+.support-text {
+  font-size: 12px;
+  padding: 0 12px;
+  margin-top: -4px;
+
+  &.required {
+    color: #ba1a1a;
+    font-weight: 500;
+  }
+
+  &.vocab {
+    color: #5f6d7e;
+  }
+}
+
+// AI-generated field: violet text only, no background changes
+.ai-generated {
+  .md3-text-field {
+    ::ng-deep textarea.mat-mdc-input-element,
+    ::ng-deep input.mat-mdc-input-element,
+    ::ng-deep .mat-mdc-select-value-text {
+      color: #7c3aed;
+    }
+  }
+  
+  .chip-container mat-chip {
+    --mdc-chip-label-text-color: #7c3aed;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+

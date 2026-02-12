@@ -1,0 +1,110 @@
+<!-- Metadatenprüfdialog Layout Template -->
+<!-- Dialog mode for metadata review - no text input, compact design -->
+
+<div class="layout-container layout-metadatenpruefdialog" [style.background]="backgroundColor || null">
+  
+  <!-- ===== INPUT AREA (optional) ===== -->
+  <app-input-area
+    *ngIf="showInputArea"
+    [userText]="userText"
+    [sourceUrl]="sourceUrl"
+    [nodeId]="nodeId"
+    [inputMode]="inputMode"
+    [isExtracting]="state?.isExtracting ?? false"
+    [compact]="true"
+    (userTextChange)="userTextChange.emit($event)"
+    (sourceUrlChange)="sourceUrlChange.emit($event)"
+    (nodeIdChange)="nodeIdChange.emit($event)"
+    (startExtraction)="startExtraction.emit()"
+    (startUrlExtraction)="startUrlExtraction.emit($event)"
+    (startNodeIdExtraction)="startNodeIdExtraction.emit($event)"
+    (inputModeChange)="inputModeChange.emit($event)"
+    (reset)="reset.emit()">
+  </app-input-area>
+
+  <!-- ===== EXTRACTION ERROR ===== -->
+  <div class="extraction-error" *ngIf="state?.extractionError">
+    <mat-icon>error_outline</mat-icon>
+    <span>{{ state!.extractionError }}</span>
+  </div>
+
+  <!-- ===== STATUS BAR (optional) ===== -->
+  <app-status-bar
+    *ngIf="showStatusBar && state?.totalFields"
+    [state]="state"
+    [contentTypes]="contentTypes"
+    [compact]="true"
+    (selectContentType)="selectContentType.emit($event)">
+  </app-status-bar>
+
+  <!-- ===== FIELD GROUPS ===== -->
+  <section class="fields-section" *ngIf="state?.fieldGroups?.length">
+    <ng-container *ngFor="let group of state?.fieldGroups; trackBy: trackByGroupId">
+      <div class="field-group" 
+           *ngIf="(group.isCore && showCoreFields) || (!group.isCore && showSpecialFields)">
+        
+        <!-- Group Header -->
+        <div class="group-header" (click)="group.collapsed = !group.collapsed">
+          <mat-icon class="group-icon">folder</mat-icon>
+          <h3>{{ group.label }}</h3>
+          <span class="count">{{ getFilledCount(group) }}/{{ getFlattenedFields(group.fields).length }}</span>
+          <mat-icon class="collapse-icon">{{ group.collapsed ? 'expand_more' : 'expand_less' }}</mat-icon>
+        </div>
+        
+        <!-- Group Fields (multi-column grid) -->
+        <div class="group-fields"
+             [class.columns-2]="columns === 2"
+             [class.columns-3]="columns === 3"
+             [class.columns-4]="columns === 4"
+             *ngIf="!group.collapsed">
+          <app-field
+            *ngFor="let field of getFlattenedFields(group.fields); trackBy: trackByFieldId"
+            [field]="field"
+            [readonly]="readonly"
+            [showActions]="showFieldActions"
+            [highlightAi]="highlightAi"
+            (valueChange)="fieldValueChange.emit({ fieldId: field.fieldId, value: $event })">
+          </app-field>
+        </div>
+      </div>
+    </ng-container>
+  </section>
+
+  <!-- ===== EMPTY STATE ===== -->
+  <section class="empty-state" *ngIf="!state?.fieldGroups?.length && !state?.isExtracting">
+    <mat-icon>info_outline</mat-icon>
+    <p>{{ 'EMPTY_STATE.NO_DATA' | translate }}</p>
+  </section>
+
+  <!-- ===== FLOATING CONTROLS ===== -->
+  <div class="floating-controls" *ngIf="showFloatingControls">
+    <!-- Content Type (floating) -->
+    <div class="floating-content-type">
+      <div class="split-button">
+        <div class="split-button-label">
+          <mat-icon>{{ state?.contentTypeIcon || 'category' }}</mat-icon>
+          <span>{{ state?.contentTypeLabel || ('CONTENT_TYPE.NOT_DETECTED' | translate) }}</span>
+        </div>
+        <button 
+          mat-icon-button
+          [matMenuTriggerFor]="floatingCtMenu">
+          <mat-icon>expand_more</mat-icon>
+        </button>
+      </div>
+      
+      <mat-menu #floatingCtMenu="matMenu">
+        <button 
+          mat-menu-item 
+          *ngFor="let ct of contentTypes"
+          (click)="selectContentType.emit(ct)"
+          [class.active]="state?.contentTypeLabel === ct.label">
+          <span>{{ ct.label }}</span>
+        </button>
+      </mat-menu>
+    </div>
+    
+    <!-- Language Switcher (separate floating pill) -->
+    <app-language-switcher *ngIf="!showContentTypeOnly"></app-language-switcher>
+  </div>
+
+</div>

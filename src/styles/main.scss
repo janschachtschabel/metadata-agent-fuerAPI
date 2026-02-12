@@ -1,0 +1,130 @@
+// Material Design v3 Theme - Angular Material 19
+@use '@angular/material' as mat;
+
+@include mat.core();
+
+// Define M3 theme with blue primary color
+$theme: mat.define-theme((
+  color: (
+    theme-type: light,
+    primary: mat.$blue-palette,
+    tertiary: mat.$green-palette,
+  ),
+  typography: (
+    brand-family: 'Roboto, "Helvetica Neue", sans-serif',
+    plain-family: 'Roboto, "Helvetica Neue", sans-serif',
+  ),
+  density: (
+    scale: 0
+  )
+));
+
+// Apply the theme
+html {
+  @include mat.all-component-themes($theme);
+}
+
+// Override primary color with corporate blue #003B7C
+html {
+  --mat-app-primary: #003B7C;
+  --mat-app-on-primary: #ffffff;
+  --mat-app-primary-container: #d0e8ff;
+  --mat-app-on-primary-container: #001d36;
+}
+
+// Global styles
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Roboto', sans-serif;
+}
+
+// Material Design v3 inspired tokens
+:root {
+  // Primary colors
+  --md-primary: #0062ac;
+  --md-on-primary: #ffffff;
+  --md-primary-container: #d3e4ff;
+  --md-on-primary-container: #001c39;
+  
+  // Secondary colors
+  --md-secondary: #006693;
+  --md-on-secondary: #ffffff;
+  --md-secondary-container: #cae6ff;
+  --md-on-secondary-container: #001e30;
+  
+  // Tertiary (success)
+  --md-tertiary: #00874d;
+  --md-on-tertiary: #ffffff;
+  --md-tertiary-container: #a1f4c0;
+  --md-on-tertiary-container: #002114;
+  
+  // Error
+  --md-error: #ba1a1a;
+  --md-on-error: #ffffff;
+  --md-error-container: #ffdad6;
+  --md-on-error-container: #410002;
+  
+  // Surface
+  --md-surface: #fafafa;
+  --md-on-surface: #1a1c1e;
+  --md-surface-variant: #dfe2eb;
+  --md-on-surface-variant: #43474e;
+  
+  // Outline
+  --md-outline: #73777f;
+  --md-outline-variant: #c3c6cf;
+  
+  // Shape
+  --md-shape-xs: 4px;
+  --md-shape-sm: 8px;
+  --md-shape-md: 12px;
+  --md-shape-lg: 16px;
+  --md-shape-xl: 28px;
+  --md-shape-full: 9999px;
+  
+  // Elevation
+  --md-elevation-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
+  --md-elevation-2: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
+  --md-elevation-3: 0 4px 8px 3px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+// Scrollbar styling
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--md-surface-variant);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--md-outline);
+  border-radius: 4px;
+  
+  &:hover {
+    background: var(--md-on-surface-variant);
+  }
+}
+
+// Focus visible
+*:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
+}
+
+// Utility classes
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

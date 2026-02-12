@@ -1,0 +1,50 @@
+/**
+ * Layout Variables
+ * Central SCSS variables for layout customization
+ */
+
+// ===== Spacing =====
+$layout-spacing-xs: 4px;
+$layout-spacing-sm: 8px;
+$layout-spacing-md: 16px;
+$layout-spacing-lg: 24px;
+$layout-spacing-xl: 32px;
+
+// Compact mode multiplier
+$compact-spacing-factor: 0.75;
+
+// ===== Container =====
+$layout-max-width-default: 100%;
+$layout-max-width-compact: 600px;
+$layout-border-radius: 8px;
+
+// ===== Colors (MD3 compatible) =====
+$layout-surface: var(--md-sys-color-surface, #fef7ff);
+$layout-surface-variant: var(--md-sys-color-surface-variant, #e7e0ec);
+$layout-on-surface: var(--md-sys-color-on-surface, #1d1b20);
+$layout-primary: var(--md-sys-color-primary, #6750a4);
+$layout-on-primary: var(--md-sys-color-on-primary, #ffffff);
+
+// ===== Sections =====
+$section-padding: $layout-spacing-md;
+$section-gap: $layout-spacing-md;
+$section-border-radius: $layout-border-radius;
+
+// ===== Status Bar =====
+$status-bar-height: 48px;
+$status-bar-compact-height: 40px;
+
+// ===== Controls =====
+$controls-height: 48px;
+$controls-gap: $layout-spacing-sm;
+
+// ===== Fields =====
+$field-gap: $layout-spacing-md;
+$field-compact-gap: $layout-spacing-sm;
+$group-header-height: 44px;
+
+// ===== Responsive Breakpoints =====
+$breakpoint-sm: 576px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 992px;
+$breakpoint-xl: 1200px;

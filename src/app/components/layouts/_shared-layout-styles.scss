@@ -1,0 +1,299 @@
+/* ===========================================
+   Shared Layout Styles
+   Common mixins and variables for all layouts
+   =========================================== */
+
+@use 'sass:color';
+
+// ===== COLORS =====
+$primary: #003B7C;
+$primary-light: #ecf2ff;
+$primary-hover: #002D5E;
+
+$surface: #ffffff;
+$surface-variant: #f5f7fb;
+$surface-container: #e2e8f6;
+
+$text-primary: #1f2a3d;
+$text-secondary: #5b667a;
+$text-muted: #8b95a5;
+
+$success: #2e7d32;
+$warning: #e65100;
+
+$border-color: #d4d9e3;
+$shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
+
+// ===== BASE LAYOUT =====
+@mixin layout-base {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background: $surface-variant;
+  color: $text-primary;
+  font-family: 'Inter', 'Roboto', sans-serif;
+  position: relative;
+}
+
+// ===== SECTION CARD =====
+@mixin section-card {
+  background: $surface;
+  border: 1px solid $border-color;
+  border-radius: 10px;
+  padding: 24px;
+}
+
+// ===== BUTTONS =====
+@mixin btn-primary {
+  background: $primary !important;
+  color: #ffffff !important;
+  border: none;
+  border-radius: 20px;
+  padding: 10px 24px !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  box-shadow: $shadow;
+
+  mat-icon {
+    color: #ffffff !important;
+    margin-right: 8px;
+  }
+
+  &:hover:not(:disabled) {
+    background: $primary-hover !important;
+  }
+
+  &:disabled {
+    background: $primary-light !important;
+    color: rgba($primary, 0.5) !important;
+    box-shadow: none;
+  }
+}
+
+@mixin btn-secondary {
+  background: $primary-light !important;
+  color: $primary !important;
+  border: none;
+  border-radius: 20px;
+  padding: 10px 24px !important;
+  font-weight: 500 !important;
+
+  mat-icon {
+    color: $primary !important;
+    margin-right: 8px;
+  }
+
+  &:hover:not(:disabled) {
+    background: color.adjust($primary-light, $lightness: -5%) !important;
+  }
+}
+
+@mixin btn-neutral {
+  background: $surface-container !important;
+  color: $text-primary !important;
+  border: none;
+  border-radius: 20px;
+  padding: 10px 24px !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  box-shadow: $shadow;
+
+  mat-icon {
+    color: $text-secondary !important;
+    margin-right: 8px;
+  }
+
+  &:hover:not(:disabled) {
+    background: color.adjust($surface-container, $lightness: -5%) !important;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    box-shadow: none;
+  }
+}
+
+// ===== SPLIT BUTTON =====
+@mixin split-button {
+  display: flex;
+  align-items: center;
+  background: $surface-container;
+  border-radius: 20px;
+  height: 40px;
+  overflow: hidden;
+  box-shadow: $shadow;
+
+  .split-button-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 16px;
+    color: $text-primary;
+    font-weight: 500;
+    font-size: 14px;
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  button, button.mat-mdc-icon-button {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    height: 100% !important;
+    background: transparent !important;
+    border-left: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    
+    .mat-mdc-button-persistent-ripple,
+    .mat-mdc-button-ripple {
+      border-radius: 0 !important;
+    }
+
+    &:hover:not(:disabled) {
+      background: color.adjust($surface-container, $lightness: -5%) !important;
+    }
+  }
+}
+
+// ===== BADGE =====
+@mixin badge {
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-weight: 500;
+  background: $surface-container;
+  color: $text-primary;
+}
+
+// ===== PROGRESS BAR =====
+@mixin progress-bar {
+  height: 6px;
+  border-radius: 3px;
+  --mdc-linear-progress-active-indicator-color: #{$primary};
+  --mdc-linear-progress-track-color: rgba(0, 59, 124, 0.12);
+}
+
+// ===== ICON =====
+@mixin icon-sm {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+// ===== GROUP HEADER =====
+@mixin group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 20px;
+  background: $surface-variant;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s ease;
+
+  &:hover {
+    background: color.adjust($surface-variant, $lightness: -3%);
+  }
+}
+
+// ===== EMPTY STATE =====
+@mixin empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 24px;
+  text-align: center;
+  
+  .empty-content {
+    mat-icon {
+      font-size: 72px;
+      width: 72px;
+      height: 72px;
+      margin-bottom: 24px;
+      opacity: 0.4;
+      color: $primary;
+    }
+    
+    h3 {
+      margin: 0 0 8px;
+      color: $text-primary;
+    }
+    
+    p {
+      margin: 0;
+      color: $text-secondary;
+      max-width: 300px;
+    }
+  }
+}
+
+// ===== FLOATING CONTROLS =====
+@mixin floating-controls {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@mixin action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: $surface-container;
+  padding: 2px 6px;
+  border-radius: 20px;
+  box-shadow: $shadow;
+  min-height: 40px;
+
+  button, ::ng-deep app-json-loader button {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    padding: 0;
+    border-radius: 50%;
+    color: $text-primary;
+    
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+      margin: 0 !important;
+    }
+
+    &:hover:not(:disabled) {
+      background: color.adjust($surface-container, $lightness: -5%);
+    }
+
+    &:disabled {
+      opacity: 0.38;
+    }
+  }
+}
+
+// ===== ANIMATION =====
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}

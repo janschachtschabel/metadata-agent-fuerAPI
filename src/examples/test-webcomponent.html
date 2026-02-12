@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metadata Agent Canvas - Web Component Test</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 16px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .control-group label {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        button {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        button:hover {
+            background: #e3f2fd;
+            border-color: #2196f3;
+        }
+        
+        button.active {
+            background: #2196f3;
+            color: white;
+            border-color: #2196f3;
+        }
+        
+        select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: white;
+        }
+        
+        .canvas-wrapper {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            min-height: 600px;
+        }
+        
+        metadata-agent-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            min-height: 600px;
+        }
+        
+        .log {
+            margin-top: 20px;
+            padding: 16px;
+            background: #1e1e1e;
+            color: #0f0;
+            border-radius: 12px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Metadata Agent Canvas - Test</h1>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label>Context</label>
+                <select id="context" onchange="updateContext()">
+                    <option value="default">Default</option>
+                    <option value="mds_oeh" selected>MDS OEH</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label>Layout</label>
+                <select id="layout" onchange="updateLayout()">
+                    <option value="default">Default</option>
+                    <option value="compact">Compact</option>
+                    <option value="minimal">Minimal</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label>Controls Mode</label>
+                <select id="controlsMode" onchange="updateControlsMode()">
+                    <option value="full">Full</option>
+                    <option value="content-type-only">Content Type Only</option>
+                    <option value="none">None</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label>Toggles</label>
+                <div style="display: flex; gap: 8px;">
+                    <button id="btn-input" class="active" onclick="toggleInput()">Input</button>
+                    <button id="btn-status" class="active" onclick="toggleStatusBar()">Status</button>
+                    <button id="btn-controls" class="active" onclick="toggleControls()">Controls</button>
+                    <button id="btn-borderless" class="active" onclick="toggleBorderless()">Borderless</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="canvas-wrapper">
+            <metadata-agent-canvas 
+                id="canvas"
+                context-name="mds_oeh"
+                viewer-mode="true"
+                borderless="true"
+                show-input="true"
+                show-status-bar="true"
+                show-controls="true"
+                controls-mode="full">
+            </metadata-agent-canvas>
+        </div>
+        
+        <div class="log" id="log">
+            <div class="log-entry">📋 Ready</div>
+        </div>
+    </div>
+
+    <!-- Angular Scripts -->
+    <script>
+        const BASE_URL = '/';
+        
+        // Load Angular scripts
+        const scripts = ['runtime.js', 'polyfills.js', 'main.js'];
+        scripts.forEach(script => {
+            const el = document.createElement('script');
+            el.src = BASE_URL + script;
+            el.defer = true;
+            document.body.appendChild(el);
+        });
+        
+        let canvas;
+        
+        // Wait for component
+        customElements.whenDefined('metadata-agent-canvas').then(() => {
+            canvas = document.getElementById('canvas');
+            log('✅ Web Component ready');
+            
+            canvas.addEventListener('metadataChange', (e) => {
+                log('📝 Metadata changed');
+            });
+            
+            canvas.addEventListener('metadataSubmit', (e) => {
+                log('📤 Metadata submitted');
+                console.log(e.detail);
+            });
+        });
+        
+        // Control functions
+        function updateContext() {
+            const value = document.getElementById('context').value;
+            canvas.contextName = value;
+            log(`🎯 Context: ${value}`);
+        }
+        
+        function updateLayout() {
+            const value = document.getElementById('layout').value;
+            canvas.layout = value;
+            log(`📐 Layout: ${value}`);
+        }
+        
+        function updateControlsMode() {
+            const value = document.getElementById('controlsMode').value;
+            canvas.controlsMode = value;
+            log(`🎛️ Controls Mode: ${value}`);
+        }
+        
+        function toggleInput() {
+            const btn = document.getElementById('btn-input');
+            const active = !btn.classList.contains('active');
+            btn.classList.toggle('active', active);
+            canvas.showInput = active;
+            log(`${active ? '✅' : '❌'} Input: ${active ? 'ON' : 'OFF'}`);
+        }
+        
+        function toggleStatusBar() {
+            const btn = document.getElementById('btn-status');
+            const active = !btn.classList.contains('active');
+            btn.classList.toggle('active', active);
+            canvas.showStatusBar = active;
+            log(`${active ? '✅' : '❌'} Status Bar: ${active ? 'ON' : 'OFF'}`);
+        }
+        
+        function toggleControls() {
+            const btn = document.getElementById('btn-controls');
+            const active = !btn.classList.contains('active');
+            btn.classList.toggle('active', active);
+            canvas.showControls = active;
+            log(`${active ? '✅' : '❌'} Controls: ${active ? 'ON' : 'OFF'}`);
+        }
+        
+        function toggleBorderless() {
+            const btn = document.getElementById('btn-borderless');
+            const active = !btn.classList.contains('active');
+            btn.classList.toggle('active', active);
+            canvas.borderless = active;
+            log(`${active ? '✅' : '❌'} Borderless: ${active ? 'ON' : 'OFF'}`);
+        }
+        
+        function log(message) {
+            const logEl = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logEl.insertBefore(entry, logEl.firstChild);
+            
+            // Keep max 50 entries
+            while (logEl.children.length > 50) {
+                logEl.removeChild(logEl.lastChild);
+            }
+        }
+    </script>
+</body>
+</html>

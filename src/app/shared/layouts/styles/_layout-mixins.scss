@@ -1,0 +1,80 @@
+/**
+ * Layout Mixins
+ * Reusable SCSS mixins for layout styling
+ */
+
+@use 'layout-variables' as vars;
+
+// ===== Container Mixins =====
+
+@mixin layout-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background: vars.$layout-surface;
+  color: vars.$layout-on-surface;
+}
+
+@mixin layout-container-borderless {
+  padding: 0;
+  margin: 0;
+  border: none;
+  box-shadow: none;
+}
+
+@mixin layout-container-bordered {
+  padding: vars.$layout-spacing-md;
+  border-radius: vars.$layout-border-radius;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+// ===== Section Mixins =====
+
+@mixin section-base {
+  padding: vars.$section-padding;
+  border-radius: vars.$section-border-radius;
+}
+
+@mixin section-hidden {
+  display: none !important;
+}
+
+// ===== Compact Spacing Mixin =====
+
+@mixin compact-spacing {
+  .input-section,
+  .status-bar-section,
+  .fields-section,
+  .footer-section {
+    padding: calc(vars.$section-padding * vars.$compact-spacing-factor);
+  }
+  
+  .field-group {
+    margin-bottom: vars.$field-compact-gap;
+  }
+  
+  .canvas-field {
+    margin-bottom: vars.$field-compact-gap;
+  }
+}
+
+// ===== Responsive Mixins =====
+
+@mixin responsive-sm {
+  @media (max-width: vars.$breakpoint-sm) {
+    @content;
+  }
+}
+
+@mixin responsive-md {
+  @media (max-width: vars.$breakpoint-md) {
+    @content;
+  }
+}
+
+@mixin responsive-lg {
+  @media (max-width: vars.$breakpoint-lg) {
+    @content;
+  }
+}

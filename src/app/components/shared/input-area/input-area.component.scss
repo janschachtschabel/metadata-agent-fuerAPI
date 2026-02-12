@@ -1,0 +1,85 @@
+@use '../../layouts/shared-layout-styles' as shared;
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+.input-area {
+  padding: 16px 20px 8px;
+
+  &.compact {
+    padding: 8px 12px 4px;
+  }
+
+  .mode-switcher {
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    mat-button-toggle-group {
+      border: 1px solid shared.$border-color;
+      border-radius: 8px;
+      overflow: hidden;
+
+      ::ng-deep .mat-button-toggle {
+        border: none;
+      }
+
+      ::ng-deep .mat-button-toggle-appearance-standard .mat-button-toggle-label-content {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 0 12px;
+        line-height: 36px;
+        font-size: 13px;
+      }
+
+      ::ng-deep .mat-button-toggle-checked {
+        background: shared.$surface-container;
+        color: shared.$text-primary;
+        box-shadow: shared.$shadow;
+
+        .mat-icon {
+          color: shared.$text-secondary;
+        }
+      }
+
+      .mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+      }
+    }
+
+    .compact & {
+      margin-bottom: 8px;
+    }
+  }
+
+  .full-width {
+    width: 100%;
+  }
+
+  .input-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 7px;
+    margin-bottom: 2px;
+    flex-wrap: wrap;
+  }
+
+  .btn-extract {
+    @include shared.btn-neutral;
+  }
+
+  .btn-reset {
+    @include shared.btn-neutral;
+  }
+
+  .btn-page-reload {
+    @include shared.btn-neutral;
+  }
+}

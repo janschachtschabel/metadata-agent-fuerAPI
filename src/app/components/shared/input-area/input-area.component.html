@@ -1,0 +1,131 @@
+<!-- Shared Input Area -->
+<section class="input-area" [class.compact]="compact">
+  
+  <!-- Mode Switcher -->
+  <div class="mode-switcher" *ngIf="showModeSwitcher">
+    <mat-button-toggle-group 
+      [value]="inputMode"
+      (change)="inputModeChange.emit($event.value)"
+      appearance="standard"
+      hideSingleSelectionIndicator>
+      <mat-button-toggle value="text" [matTooltip]="'INPUT.MODE_TEXT' | translate">
+        <mat-icon>description</mat-icon>
+        <span class="mode-label">{{ 'INPUT.MODE_TEXT' | translate }}</span>
+      </mat-button-toggle>
+      <mat-button-toggle value="url" [matTooltip]="'INPUT.MODE_URL' | translate">
+        <mat-icon>link</mat-icon>
+        <span class="mode-label">{{ 'INPUT.MODE_URL' | translate }}</span>
+      </mat-button-toggle>
+      <mat-button-toggle value="nodeId" [matTooltip]="'INPUT.MODE_NODE_ID' | translate">
+        <mat-icon>tag</mat-icon>
+        <span class="mode-label">{{ 'INPUT.MODE_NODE_ID' | translate }}</span>
+      </mat-button-toggle>
+    </mat-button-toggle-group>
+  </div>
+
+  <!-- Text Input -->
+  <ng-container *ngIf="inputMode === 'text'">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>{{ 'INPUT.PLACEHOLDER' | translate }}</mat-label>
+      <textarea
+        matInput
+        [rows]="compact ? 2 : 4"
+        [ngModel]="userText"
+        (ngModelChange)="userTextChange.emit($event)"
+        [disabled]="isExtracting"
+        (keydown.enter)="onEnterKey($event)">
+      </textarea>
+    </mat-form-field>
+  </ng-container>
+  
+  <!-- URL Input -->
+  <ng-container *ngIf="inputMode === 'url'">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>{{ 'INPUT.URL_PLACEHOLDER' | translate }}</mat-label>
+      <input
+        matInput
+        type="url"
+        [ngModel]="sourceUrl"
+        (ngModelChange)="sourceUrlChange.emit($event)"
+        [disabled]="isExtracting"
+        placeholder="https://example.com/resource">
+      <mat-icon matPrefix>link</mat-icon>
+    </mat-form-field>
+  </ng-container>
+  
+  <!-- NodeId Input -->
+  <ng-container *ngIf="inputMode === 'nodeId'">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>{{ 'INPUT.NODE_ID_PLACEHOLDER' | translate }}</mat-label>
+      <input
+        matInput
+        type="text"
+        [ngModel]="nodeId"
+        (ngModelChange)="nodeIdChange.emit($event)"
+        [disabled]="isExtracting"
+        placeholder="abc123-def456-...">
+      <mat-icon matPrefix>tag</mat-icon>
+    </mat-form-field>
+  </ng-container>
+  
+  <div class="input-actions">
+    <!-- Text Extraction Button -->
+    <button 
+      *ngIf="inputMode === 'text'"
+      mat-flat-button
+      class="btn-extract"
+      [disabled]="!userText.trim() || isExtracting"
+      (click)="startExtraction.emit()">
+      <mat-icon *ngIf="!isExtracting">play_arrow</mat-icon>
+      <mat-icon *ngIf="isExtracting">hourglass_empty</mat-icon>
+      <span *ngIf="!isExtracting">{{ 'INPUT.START_EXTRACTION' | translate }}</span>
+      <span *ngIf="isExtracting">{{ 'INPUT.EXTRACTING' | translate }}</span>
+    </button>
+    
+    <!-- URL Extraction Button -->
+    <button 
+      *ngIf="inputMode === 'url'"
+      mat-flat-button
+      class="btn-extract"
+      [disabled]="!sourceUrl.trim() || isExtracting"
+      (click)="startUrlExtraction.emit(sourceUrl)">
+      <mat-icon *ngIf="!isExtracting">language</mat-icon>
+      <mat-icon *ngIf="isExtracting">hourglass_empty</mat-icon>
+      <span *ngIf="!isExtracting">{{ 'INPUT.EXTRACT_FROM_URL' | translate }}</span>
+      <span *ngIf="isExtracting">{{ 'INPUT.EXTRACTING' | translate }}</span>
+    </button>
+    
+    <!-- NodeId Extraction Button -->
+    <button 
+      *ngIf="inputMode === 'nodeId'"
+      mat-flat-button
+      class="btn-extract"
+      [disabled]="!nodeId.trim() || isExtracting"
+      (click)="startNodeIdExtraction.emit(nodeId)">
+      <mat-icon *ngIf="!isExtracting">cloud_download</mat-icon>
+      <mat-icon *ngIf="isExtracting">hourglass_empty</mat-icon>
+      <span *ngIf="!isExtracting">{{ 'INPUT.EXTRACT_FROM_NODE' | translate }}</span>
+      <span *ngIf="isExtracting">{{ 'INPUT.EXTRACTING' | translate }}</span>
+    </button>
+    
+    <button 
+      mat-flat-button
+      class="btn-reset"
+      (click)="reset.emit()"
+      [disabled]="isExtracting">
+      <mat-icon>refresh</mat-icon>
+      {{ 'INPUT.RESET' | translate }}
+    </button>
+
+    <!-- Reload from current browser page (plugin only) -->
+    <button 
+      *ngIf="showPageMode"
+      mat-flat-button
+      class="btn-page-reload"
+      [disabled]="isExtracting"
+      (click)="reloadFromPage.emit()">
+      <mat-icon>captive_portal</mat-icon>
+      {{ 'INPUT.MODE_PAGE' | translate }}
+    </button>
+  </div>
+</section>

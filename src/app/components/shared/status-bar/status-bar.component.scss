@@ -1,0 +1,64 @@
+@use '../../layouts/shared-layout-styles' as shared;
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
+
+  &.compact {
+    padding: 8px 12px;
+    gap: 10px;
+  }
+
+  .content-type-selector {
+    .split-button {
+      @include shared.split-button;
+    }
+  }
+
+  .field-stats {
+    display: flex;
+    gap: 8px;
+
+    .stat-badge {
+      @include shared.badge;
+
+      &.required {
+        background: #fff3e0;
+        color: #e65100;
+
+        &.complete {
+          background: #e8f5e9;
+          color: #2e7d32;
+        }
+      }
+    }
+  }
+
+  .progress-bar-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    mat-progress-bar {
+      flex: 1;
+      @include shared.progress-bar;
+    }
+
+    .progress-icon {
+      @include shared.icon-sm;
+      color: shared.$text-secondary;
+
+      &.complete {
+        color: #2e7d32;
+      }
+    }
+  }
+}

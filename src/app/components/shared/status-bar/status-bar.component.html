@@ -1,0 +1,54 @@
+<!-- Shared Status Bar -->
+<section class="status-bar" [class.compact]="compact">
+  
+  <!-- Content Type Selector -->
+  <div class="content-type-selector">
+    <div class="split-button">
+      <div class="split-button-label">
+        <mat-icon>{{ state?.contentTypeIcon || 'category' }}</mat-icon>
+        <span>{{ state?.contentTypeLabel || ('CONTENT_TYPE.NOT_DETECTED' | translate) }}</span>
+      </div>
+      <button 
+        mat-icon-button
+        [matMenuTriggerFor]="contentTypeMenu"
+        [disabled]="state?.isExtracting ?? false"
+        class="split-button-trigger">
+        <mat-icon>expand_more</mat-icon>
+      </button>
+    </div>
+    
+    <mat-menu #contentTypeMenu="matMenu">
+      <button 
+        mat-menu-item 
+        *ngFor="let ct of contentTypes"
+        (click)="selectContentType.emit(ct)"
+        [class.active]="state?.contentTypeLabel === ct.label">
+        <span>{{ ct.label }}</span>
+        <mat-icon *ngIf="state?.contentTypeLabel === ct.label">check</mat-icon>
+      </button>
+    </mat-menu>
+  </div>
+
+  <!-- Field Stats -->
+  <div class="field-stats">
+    <span class="stat-badge">
+      {{ 'PROGRESS.FIELDS' | translate }}: {{ state?.filledFields }}/{{ state?.totalFields }}
+    </span>
+    <span class="stat-badge required" 
+          [class.complete]="getRequiredFieldsStatus().filled === getRequiredFieldsStatus().total">
+      {{ 'PROGRESS.REQUIRED' | translate }}: {{ getRequiredFieldsStatus().filled }}/{{ getRequiredFieldsStatus().total }}
+    </span>
+  </div>
+
+  <!-- Progress Bar -->
+  <div class="progress-bar-wrapper">
+    <mat-progress-bar 
+      mode="determinate"
+      [value]="getProgressPercent()">
+    </mat-progress-bar>
+    <mat-icon class="progress-icon" [class.complete]="getProgressPercent() === 100">
+      {{ getProgressPercent() === 100 ? 'check_circle' : 'pending' }}
+    </mat-icon>
+  </div>
+
+</section>

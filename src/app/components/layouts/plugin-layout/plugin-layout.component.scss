@@ -1,0 +1,204 @@
+/* ===========================================
+   Plugin Layout Styles
+   Compact sidebar layout for browser extension
+   =========================================== */
+
+@use '../shared-layout-styles' as shared;
+
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+// ===== VARIANT-SPECIFIC: Plugin =====
+.layout-plugin {
+  .fields-section {
+    padding: 4px 8px;
+    padding-bottom: 80px;
+  }
+  .field-group {
+    margin-bottom: 16px;
+  }
+  .group-header {
+    padding: 10px 12px;
+  }
+  .group-fields {
+    padding: 12px 10px 10px;
+  }
+}
+
+.layout-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background: #ffffff;
+  color: shared.$text-primary;
+  font-family: 'Inter', 'Roboto', sans-serif;
+
+  &:has(.fields-section) {
+    justify-content: flex-start;
+  }
+}
+
+// ===== EXTRACTION ERROR =====
+.extraction-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 8px;
+  padding: 8px 12px;
+  background: #fdecea;
+  border: 1px solid #f5c6cb;
+  border-radius: 8px;
+  color: #721c24;
+  font-size: 12px;
+
+  mat-icon { color: #ba1a1a; flex-shrink: 0; font-size: 18px; width: 18px; height: 18px; }
+  span { flex: 1; line-height: 1.4; }
+}
+
+// ===== FIELDS SECTION =====
+.fields-section {
+  flex: 1;
+  width: 100%;
+  overflow-y: auto;
+}
+
+// ===== FIELD GROUP =====
+.field-group {
+  background: white;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  overflow: hidden;
+
+  .group-header {
+    @include shared.group-header;
+    gap: 8px;
+    margin: 0;
+    border-radius: 7px 7px 0 0;
+
+    .group-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: shared.$text-secondary;
+    }
+
+    h3 {
+      margin: 0;
+      flex: 1;
+      font-size: 13px;
+      font-weight: 600;
+      color: shared.$text-primary;
+      letter-spacing: 0.5px;
+    }
+
+    .count {
+      font-size: 11px;
+      color: shared.$text-muted;
+    }
+  }
+
+  .group-fields {
+    &.columns-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0 8px;
+      @media (max-width: 500px) { grid-template-columns: 1fr; }
+    }
+
+    ::ng-deep app-field {
+      display: block;
+      margin-bottom: 12px;
+      &:last-child { margin-bottom: 0; }
+    }
+  }
+}
+
+// ===== EMPTY STATE =====
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 32px 16px;
+  color: shared.$text-secondary;
+
+  mat-icon {
+    font-size: 36px;
+    width: 36px;
+    height: 36px;
+    margin-bottom: 12px;
+    opacity: 0.5;
+  }
+
+  p {
+    font-size: 13px;
+    margin: 0;
+  }
+}
+
+// ===== FLOATING CONTROLS =====
+.floating-controls {
+  @include shared.floating-controls;
+
+  .floating-content-type {
+    .split-button {
+      @include shared.split-button;
+    }
+  }
+
+  .action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+
+    .btn-action {
+      @include shared.btn-neutral;
+      padding: 0 14px !important;
+      height: 40px;
+      font-size: 13px !important;
+      box-shadow: none;
+
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+        margin-right: 4px !important;
+      }
+
+      span {
+        white-space: nowrap;
+      }
+    }
+
+    .submit-pulse.has-data {
+      background: #c8e6c9 !important;
+      color: #1b5e20 !important;
+      box-shadow: 0 1px 3px rgba(46, 125, 50, 0.3);
+
+      mat-icon {
+        color: #1b5e20 !important;
+      }
+
+      &:hover:not(:disabled) {
+        animation: pulse-glow 1.5s ease-in-out infinite;
+        background: #a5d6a7 !important;
+      }
+    }
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 4px rgba(46, 125, 50, 0.3);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(46, 125, 50, 0.6);
+    transform: scale(1.06);
+  }
+}

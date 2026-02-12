@@ -1,0 +1,323 @@
+/* ===========================================
+   Prüftisch Layout Styles
+   Clean, card-based review table design
+   =========================================== */
+
+@use '../shared-layout-styles' as shared;
+
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+// ===== EXTRACTION ERROR =====
+.extraction-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 16px;
+  padding: 10px 16px;
+  background: #fdecea;
+  border: 1px solid #f5c6cb;
+  border-radius: 8px;
+  color: #721c24;
+  font-size: 13px;
+  
+  mat-icon { color: #ba1a1a; flex-shrink: 0; }
+  span { flex: 1; line-height: 1.4; }
+}
+
+.layout-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  background: transparent;
+  color: shared.$text-primary;
+  font-family: 'Inter', 'Roboto', sans-serif;
+  
+  // When fields are present, align to top
+  &:has(.fields-section) {
+    justify-content: flex-start;
+  }
+}
+
+// ===== VARIANT-SPECIFIC: Prüftisch =====
+.layout-prueftisch {
+  .fields-section {
+    padding: 0;
+    padding-bottom: 100px;
+  }
+  .field-group {
+    margin-bottom: 32px;
+  }
+  .group-header {
+    padding: 16px 20px;
+  }
+  .group-fields {
+    padding: 20px 16px 16px;
+  }
+}
+
+// ===== VARIANT-SPECIFIC: Prüftisch Groß =====
+.layout-prueftisch-gross {
+  .fields-section {
+    padding: 0;
+    padding-bottom: 100px;
+  }
+  .field-group {
+    margin-bottom: 32px;
+  }
+  .group-header {
+    padding: 16px 20px;
+  }
+  .group-fields {
+    padding: 20px 16px 16px;
+  }
+}
+
+// ===== FIELDS SECTION (shared structure) =====
+.fields-section {
+  flex: 1;
+  width: 100%;
+  overflow-y: auto;
+}
+
+// ===== FIELD GROUP (shared structure) =====
+.field-group {
+  background: white;
+  border: 1px solid #d0d5dd;
+  border-radius: 12px;
+  overflow: hidden;
+  
+  .group-header {
+    @include shared.group-header;
+    gap: 12px;
+    margin: 0;
+    border-radius: 11px 11px 0 0;
+    
+    .group-icon {
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
+      color: shared.$text-secondary;
+    }
+    
+    h3 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: shared.$text-primary;
+      letter-spacing: 0.5px;
+    }
+  }
+  
+  .header-separator {
+    display: none;
+  }
+  
+  .group-fields {
+    
+    &.columns-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0 16px;
+      @media (max-width: 768px) { grid-template-columns: 1fr; }
+    }
+    &.columns-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0 16px;
+      @media (max-width: 1024px) { grid-template-columns: repeat(2, 1fr); }
+      @media (max-width: 768px) { grid-template-columns: 1fr; }
+    }
+    &.columns-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0 16px;
+      @media (max-width: 1280px) { grid-template-columns: repeat(3, 1fr); }
+      @media (max-width: 1024px) { grid-template-columns: repeat(2, 1fr); }
+      @media (max-width: 768px) { grid-template-columns: 1fr; }
+    }
+    
+    // Override field component styles for prueftisch
+    ::ng-deep app-field {
+      display: block;
+      margin-bottom: 20px;
+      
+      &:last-child {
+        margin-bottom: 0;
+      }
+      
+      .field-container {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0;
+        
+        // Label: small gray text
+        .field-label {
+          font-size: 13px;
+          color: #666;
+          margin-bottom: 2px;
+          font-weight: 400;
+        }
+        
+        // Values: bold black text, NO background
+        .field-value,
+        .value-display {
+          font-size: 15px;
+          font-weight: 500;
+          color: #000 !important;
+          background: transparent !important;
+          border: none !important;
+          padding: 4px 0;
+          min-height: auto;
+        }
+        
+        // Input fields: also plain text style
+        .field-input,
+        textarea,
+        input[type="text"],
+        input[type="number"] {
+          font-size: 15px;
+          font-weight: 500;
+          color: #000 !important;
+          background: transparent !important;
+          border: none !important;
+          border-bottom: 1px solid #e0e0e0 !important;
+          border-radius: 0 !important;
+          padding: 4px 0;
+          min-height: auto;
+          width: 100%;
+          
+          &:focus {
+            border-bottom-color: #0066cc !important;
+            outline: none;
+          }
+          
+          &::placeholder {
+            color: #999;
+            font-weight: 400;
+          }
+        }
+        
+        // Empty field: just a dash
+        .field-value:empty::before,
+        .value-display:empty::before {
+          content: '-';
+          color: #000;
+          font-weight: 500;
+        }
+        
+        // Dropdowns: subtle border
+        .mat-select,
+        .mat-mdc-select,
+        select {
+          background: white !important;
+          border: 1px solid #e0e0e0 !important;
+          border-radius: 4px;
+          padding: 8px 12px;
+          font-size: 15px;
+          color: #000;
+        }
+        
+        // Chips/Tags: blue text, comma-separated, NO background
+        .chip-list,
+        .mat-chip-listbox,
+        .mat-mdc-chip-set {
+          background: transparent !important;
+          border: none !important;
+          padding: 4px 0;
+          min-height: auto;
+          display: inline;
+          
+          .chip,
+          .mat-mdc-chip,
+          mat-chip {
+            background: transparent !important;
+            color: #0066cc !important;
+            border: none !important;
+            padding: 0;
+            font-size: 15px;
+            font-weight: 500;
+            margin: 0;
+            height: auto;
+            min-height: auto;
+            display: inline;
+            
+            &::after {
+              content: ', ';
+            }
+            
+            &:last-child::after {
+              content: '';
+            }
+            
+            .mat-mdc-chip-action-label {
+              color: #0066cc !important;
+            }
+          }
+        }
+        
+        // Tags displayed as inline text
+        .tags-display,
+        .values-list {
+          font-size: 15px;
+          font-weight: 500;
+          color: #0066cc;
+          padding: 4px 0;
+        }
+      }
+
+      // Hide support text (required hint, vocab hint) in prueftisch
+      .support-text {
+        display: none !important;
+      }
+    }
+  }
+}
+
+// ===== EMPTY STATE =====
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 48px;
+  color: shared.$text-secondary;
+  
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+  }
+  
+  p {
+    font-size: 16px;
+    margin: 0;
+  }
+}
+
+// ===== FLOATING CONTROLS =====
+.floating-controls {
+  @include shared.floating-controls;
+  
+  .floating-content-type {
+    .split-button {
+      @include shared.split-button;
+    }
+  }
+  
+  .action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+}

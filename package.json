@@ -1,0 +1,42 @@
+{
+  "name": "metadata-agent-canvas",
+  "version": "2.0.0",
+  "description": "Optimized Angular Web Component for AI-powered Metadata Extraction",
+  "scripts": {
+    "start": "ng serve",
+    "proxy": "node proxy.js",
+    "start:proxy": "concurrently \"node proxy.js\" \"ng serve\" --names \"PROXY,NG\"",
+    "build": "ng build --configuration production",
+    "build:elements": "ng build --configuration production && node scripts/build-elements.js",
+    "test": "ng test",
+    "lint": "ng lint"
+  },
+  "dependencies": {
+    "@angular/animations": "^19.2.14",
+    "@angular/cdk": "^19.2.18",
+    "@angular/common": "^19.2.14",
+    "@angular/compiler": "^19.2.14",
+    "@angular/core": "^19.2.14",
+    "@angular/elements": "^19.2.14",
+    "@angular/forms": "^19.2.14",
+    "@angular/material": "^19.2.18",
+    "@angular/platform-browser": "^19.2.14",
+    "@angular/platform-browser-dynamic": "^19.2.14",
+    "@ngx-translate/core": "^17.0.0",
+    "@ngx-translate/http-loader": "^17.0.0",
+    "ngx-edu-sharing-b-api": "^0.0.8",
+    "ngx-mat-timepicker": "^19.0.0",
+    "rxjs": "^7.8.1",
+    "tslib": "^2.3.1",
+    "zone.js": "~0.15.1"
+  },
+  "devDependencies": {
+    "@angular-devkit/build-angular": "^19.2.14",
+    "@angular/cli": "^19.2.14",
+    "@angular/compiler-cli": "^19.2.14",
+    "@types/node": "^20.4.2",
+    "concurrently": "^9.2.1",
+    "dotenv": "^17.2.3",
+    "typescript": "~5.8.3"
+  }
+}
