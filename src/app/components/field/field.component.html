@@ -59,7 +59,7 @@
     <mat-datepicker-toggle *ngIf="field.datatype === 'date'" matIconSuffix [for]="datePicker"></mat-datepicker-toggle>
     <mat-datepicker #datePicker></mat-datepicker>
 
-    <!-- DateTime field: single editable text input + calendar picker for date part -->
+    <!-- DateTime field: editable text input + date picker + time picker -->
     <input
       *ngIf="field.datatype === 'datetime'"
       matInput
@@ -68,9 +68,15 @@
       (blur)="onDateTimeBlur()"
       [placeholder]="field.description || 'TT.MM.JJJJ HH:MM'"
       [disabled]="field.status === FieldStatus.EXTRACTING || readonly"/>
+    <!-- Hidden input for date picker binding -->
     <input *ngIf="field.datatype === 'datetime'" [matDatepicker]="dateTimePicker" (dateChange)="onDateTimePickerSelect($event)" style="display:none"/>
     <mat-datepicker-toggle *ngIf="field.datatype === 'datetime'" matIconSuffix [for]="dateTimePicker"></mat-datepicker-toggle>
     <mat-datepicker #dateTimePicker></mat-datepicker>
+    <!-- Hidden input for time picker binding -->
+    <input *ngIf="field.datatype === 'datetime'" [ngxMatTimepicker]="dateTimeTimePicker" [format]="24" [value]="dateTimeTimeValue" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none;overflow:hidden"/>
+    <ngx-mat-timepicker-toggle *ngIf="field.datatype === 'datetime'" matIconSuffix [for]="dateTimeTimePicker">
+    </ngx-mat-timepicker-toggle>
+    <ngx-mat-timepicker #dateTimeTimePicker [format]="24" (timeChanged)="onDateTimeTimeChange($event)"></ngx-mat-timepicker>
 
     <!-- Time field with clock-dial timepicker -->
     <input

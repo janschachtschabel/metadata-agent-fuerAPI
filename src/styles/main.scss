@@ -116,6 +116,104 @@ html, body {
   outline-offset: 2px;
 }
 
+// ngx-mat-timepicker overrides — match Material datepicker appearance
+.timepicker-overlay {
+  z-index: 10000 !important;
+}
+
+.timepicker-backdrop-overlay {
+  z-index: 9999 !important;
+}
+
+ngx-mat-timepicker-container {
+  // Outer container (dialog wrapper)
+  .timepicker {
+    border-radius: 16px !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+  }
+
+  // Header: make it light like the datepicker
+  .timepicker__header {
+    background-color: var(--md-surface, #fafafa) !important;
+    padding: 16px 24px !important;
+  }
+
+  // Time display digits
+  .timepicker__body--time {
+    color: var(--md-on-surface, #1a1c1e) !important;
+    font-weight: 400 !important;
+  }
+
+  // Active time segment
+  ngx-mat-timepicker-time-formatter span.active {
+    color: var(--md-primary, #0062ac) !important;
+    background: transparent !important;
+  }
+
+  // Hide AM/PM toggle (always 24h format)
+  .timepicker__header--ampm {
+    display: none !important;
+  }
+
+  // Clock face
+  .clock-face {
+    background-color: var(--md-surface-variant, #dfe2eb) !important;
+  }
+
+  // Clock hand (line + circle)
+  .clock-face__clock-hand {
+    background-color: var(--md-primary, #0062ac) !important;
+
+    &::after {
+      background-color: var(--md-primary, #0062ac) !important;
+    }
+
+    &::before {
+      border-color: var(--md-primary, #0062ac) !important;
+    }
+  }
+
+  // Selected number on clock face
+  .clock-face__number > span.active {
+    background-color: var(--md-primary, #0062ac) !important;
+    color: var(--md-on-primary, #ffffff) !important;
+  }
+
+  // Unselected numbers
+  .clock-face__number > span {
+    color: var(--md-on-surface, #1a1c1e) !important;
+  }
+
+  // Inner (24h) numbers
+  .clock-face__inner > span {
+    color: var(--md-on-surface-variant, #43474e) !important;
+  }
+
+  .clock-face__inner > span.active {
+    background-color: var(--md-primary, #0062ac) !important;
+    color: var(--md-on-primary, #ffffff) !important;
+  }
+
+  // Body background
+  .timepicker__body {
+    background-color: #ffffff !important;
+  }
+
+  // Action buttons (Cancel / OK)
+  .timepicker__actions {
+    background-color: #ffffff !important;
+    padding: 8px 16px !important;
+    justify-content: flex-end !important;
+
+    button {
+      color: var(--md-primary, #0062ac) !important;
+      text-transform: uppercase !important;
+      font-weight: 500 !important;
+      font-size: 14px !important;
+    }
+  }
+}
+
 // Utility classes
 .visually-hidden {
   position: absolute;

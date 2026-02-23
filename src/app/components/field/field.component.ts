@@ -118,6 +118,7 @@ export class FieldComponent implements OnInit, OnChanges, OnDestroy {
   // Local input value for editing (always empty for array fields)
   inputValue = '';
   dateValue: Date | null = null;
+  dateTimeTimeValue = '00:00';
   filteredOptions: string[] = [];
   
   // Tree picker state
@@ -179,6 +180,9 @@ export class FieldComponent implements OnInit, OnChanges, OnDestroy {
     } else if (this.field.datatype === 'datetime' && this.field.value) {
       // Format datetime as German "DD.MM.YYYY HH:MM"
       this.inputValue = this.formatDateTimeGerman(String(this.field.value));
+      // Extract time part for timepicker
+      const timeMatch = String(this.field.value).match(/(\d{2}):(\d{2})/);
+      this.dateTimeTimeValue = timeMatch ? `${timeMatch[1]}:${timeMatch[2]}` : '00:00';
     } else if (this.field.value !== null && this.field.value !== undefined) {
       // Translate URI to label if vocabulary exists
       this.inputValue = this.getChipDisplayValue(this.field.value);
@@ -433,7 +437,30 @@ export class FieldComponent implements OnInit, OnChanges, OnDestroy {
     const timeMatch = this.inputValue?.match(/(\d{1,2}):(\d{2})/);
     const time = timeMatch ? `${timeMatch[1].padStart(2, '0')}:${timeMatch[2]}` : '00:00';
     this.inputValue = `${day}.${month}.${year} ${time}`;
+    this.dateTimeTimeValue = time;
     this.valueChange.emit(`${year}-${month}-${day}T${time}`);
+    this.validationError = '';
+  }
+
+  onDateTimeTimeChange(timeStr: string): void {
+    if (!timeStr) return;
+    // Parse current datetime to get the date part
+    const currentIso = this.parseDateTimeGerman(this.inputValue);
+    let datePart: string;
+    if (currentIso) {
+      datePart = currentIso.split('T')[0];
+    } else {
+      // No date yet — use today
+      const today = new Date();
+      datePart = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    }
+    // Normalize time to HH:MM (strip seconds if present)
+    const tMatch = timeStr.match(/(\d{1,2}):(\d{2})/);
+    const normalizedTime = tMatch ? `${tMatch[1].padStart(2, '0')}:${tMatch[2]}` : timeStr;
+    const newIso = `${datePart}T${normalizedTime}`;
+    this.inputValue = this.formatDateTimeGerman(newIso);
+    this.dateTimeTimeValue = normalizedTime;
+    this.valueChange.emit(newIso);
     this.validationError = '';
   }
 

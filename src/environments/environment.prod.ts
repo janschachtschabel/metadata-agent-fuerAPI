@@ -15,7 +15,7 @@ export const environment = {
   
   // Default Schema Context
   defaultContext: 'default',
-  defaultVersion: '1.8.0',
+  defaultVersion: '1.8.1',
   
   // Default Layout
   defaultLayout: 'default'
