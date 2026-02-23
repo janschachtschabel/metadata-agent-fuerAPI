@@ -45,7 +45,7 @@
         
         <!-- Group Header -->
         <div class="group-header" (click)="group.collapsed = !group.collapsed">
-          <mat-icon class="group-icon">folder</mat-icon>
+          <mat-icon class="group-icon">{{ group.icon || 'folder' }}</mat-icon>
           <h3>{{ group.label }}</h3>
           <span class="count">{{ getFilledCount(group) }}/{{ getFlattenedFields(group.fields).length }}</span>
           <mat-icon class="collapse-icon">{{ group.collapsed ? 'expand_more' : 'expand_less' }}</mat-icon>

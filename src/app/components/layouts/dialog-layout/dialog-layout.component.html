@@ -43,7 +43,7 @@
         
         <!-- Grey bar — edge-to-edge -->
         <div class="group-header">
-          <mat-icon class="group-icon">{{ getGroupIcon(group) }}</mat-icon>
+          <mat-icon class="group-icon">{{ group.icon || getGroupIcon(group) }}</mat-icon>
           <h3>{{ group.label }}</h3>
         </div>
         

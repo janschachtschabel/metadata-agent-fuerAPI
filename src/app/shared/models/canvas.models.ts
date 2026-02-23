@@ -49,11 +49,13 @@ export interface VocabularyConcept {
   schema_file?: string;
   icon?: string;
   description?: string;
+  broader?: string;
 }
 
 export interface VocabularyInfo {
   type: 'open' | 'closed' | 'mixed';
   source?: string;
+  hierarchical?: boolean;
   concepts: VocabularyConcept[];
 }
 
@@ -95,6 +97,7 @@ export interface CanvasFieldState {
   prompt?: string;
   group: string;
   groupLabel: string;
+  groupIcon?: string;
   groupOrder: number;
   schemaName: string;
   aiFillable: boolean;
@@ -129,6 +132,7 @@ export interface CanvasFieldState {
 export interface FieldGroup {
   id: string;
   label: string;
+  icon?: string;
   schemaName: string;
   fields: CanvasFieldState[];
   collapsed?: boolean;

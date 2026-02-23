@@ -327,11 +327,13 @@ export class SchemaService {
     
     return {
       type: vocabulary.type || 'open',
+      hierarchical: vocabulary.hierarchical || false,
       concepts: vocabulary.concepts.map((concept: any) => ({
         ...concept,
         label: this.localizeString(concept.label, lang),
         description: concept.description ? this.localizeString(concept.description, lang) : undefined,
-        altLabels: concept.altLabels || []
+        altLabels: concept.altLabels || [],
+        broader: concept.broader || undefined
       }))
     };
   }

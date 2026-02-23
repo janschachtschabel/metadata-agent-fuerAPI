@@ -36,30 +36,39 @@ export class DynamicTranslateLoader implements TranslateLoader {
   getTranslation(lang: string): Observable<any> {
     const apiUrl = DynamicTranslateLoader.apiUrl;
 
-    // apiUrl already known → fetch immediately
+    // Local fallback: try ./assets/i18n/ (works on localhost and in
+    // Chrome extension sidebar where build-extension.ps1 copies i18n files)
+    const localFallback = () =>
+      this.http.get(`./assets/i18n/${lang}.json`).pipe(catchError(() => of({})));
+
+    // apiUrl already known → fetch from API, fallback to local assets
     if (apiUrl) {
       return this.http.get(`${apiUrl}/widget/i18n/${lang}.json`).pipe(
-        catchError(() => of({}))
+        catchError(() => localFallback())
       );
     }
 
-    // Local dev (ng serve on localhost): try local assets immediately.
-    // Web-component mode (any other host): skip local request to avoid
-    // a 404 console error; wait for apiUrl instead.
-    const isLocalDev = typeof window !== 'undefined'
-      && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    // Local dev (ng serve) or extension page: try local assets immediately
+    const isLocalOrExtension = typeof window !== 'undefined'
+      && (window.location.hostname === 'localhost'
+        || window.location.hostname === '127.0.0.1'
+        || window.location.protocol === 'chrome-extension:'
+        || window.location.protocol === 'moz-extension:');
 
-    if (isLocalDev) {
+    if (isLocalOrExtension) {
       return this.http.get(`./assets/i18n/${lang}.json`).pipe(
         catchError(() => of({}))
       );
     }
 
-    // Web-component mode: wait for apiUrl, then fetch from API
+    // Web-component mode: wait for apiUrl, then fetch from API (fallback to local)
     return DynamicTranslateLoader.apiUrl$.pipe(
       take(1),
-      switchMap(url => this.http.get(`${url}/widget/i18n/${lang}.json`)),
-      catchError(() => of({}))
+      switchMap(url =>
+        this.http.get(`${url}/widget/i18n/${lang}.json`).pipe(
+          catchError(() => localFallback())
+        )
+      )
     );
   }
 }

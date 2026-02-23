@@ -111,6 +111,11 @@
       &:hover {
         --mdc-chip-elevated-container-color: #d4def4;
       }
+
+      button[matChipRemove] mat-icon {
+        color: #1f2a3d;
+        font-size: 18px;
+      }
     }
   }
 
@@ -197,6 +202,30 @@
   
   .chip-container mat-chip {
     --mdc-chip-label-text-color: #7c3aed;
+  }
+}
+
+// Tree picker anchor (relative positioning for overlay)
+.tree-picker-anchor {
+  position: relative;
+  z-index: 100;
+}
+
+.picker-trigger {
+  cursor: pointer !important;
+}
+
+.picker-display-input {
+  cursor: pointer !important;
+
+  &.collapsed {
+    flex: 0 0 0;
+    min-width: 0;
+    width: 0;
+    padding: 0;
+    border: none;
+    opacity: 0;
+    pointer-events: none;
   }
 }
 

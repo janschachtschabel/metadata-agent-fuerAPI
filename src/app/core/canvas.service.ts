@@ -308,10 +308,11 @@ export class CanvasService {
     const language = this.schema.getActiveLanguage();
     const groupMap = new Map((groups || []).map((g: any) => [g.id, this.schema.localizeString(g.label, language)]));
     const groupOrderMap = new Map(groups?.map((g: any, index: number) => [g.id, index]) || []);
+    const groupIconMap = new Map((groups || []).map((g: any) => [g.id, g.icon || '']));
     
     const coreFields: CanvasFieldState[] = coreSchemaFields
       .filter((field: any) => field.system?.ask_user !== false)
-      .map((field: any) => this.createFieldState(field, 'Core', groupMap, groupOrderMap, language));
+      .map((field: any) => this.createFieldState(field, 'Core', groupMap, groupOrderMap, groupIconMap, language));
 
     const fieldGroups = this.groupFields(coreFields);
     const visibleFields = this.getCountableFields(coreFields);
@@ -332,13 +333,14 @@ export class CanvasService {
     const language = this.schema.getActiveLanguage();
     const groupMap = new Map((groups || []).map((g: any) => [g.id, this.schema.localizeString(g.label, language)]));
     const groupOrderMap = new Map(groups?.map((g: any, index: number) => [g.id, index]) || []);
+    const groupIconMap = new Map((groups || []).map((g: any) => [g.id, g.icon || '']));
     
     const schemaName = schemaFile.replace('.json', '')
       .split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
     
     const specialFields: CanvasFieldState[] = specialSchemaFields
       .filter((field: any) => field.system?.ask_user !== false)
-      .map((field: any) => this.createFieldState(field, schemaName, groupMap, groupOrderMap, language));
+      .map((field: any) => this.createFieldState(field, schemaName, groupMap, groupOrderMap, groupIconMap, language));
 
     const state = this.getCurrentState();
     const allFields = [...state.coreFields, ...specialFields];
@@ -357,6 +359,7 @@ export class CanvasService {
     schemaName: string, 
     groupMap: Map<string, string>, 
     groupOrderMap: Map<string, number>,
+    groupIconMap: Map<string, string>,
     language: string
   ): CanvasFieldState {
     const groupId = field.group || 'other';
@@ -364,6 +367,7 @@ export class CanvasService {
       || groupMap.get(groupId) 
       || this.schema.getFallbackGroupLabel(language);
     const groupOrder = groupOrderMap.get(groupId) ?? 999;
+    const groupIcon = groupIconMap.get(groupId) || '';
     const localizedField = this.schema.localizeFieldFull(field, language);
 
     return {
@@ -371,6 +375,7 @@ export class CanvasService {
       uri: field.system?.uri || field.id,
       group: groupId,
       groupLabel: String(groupLabel),
+      groupIcon: groupIcon,
       groupOrder: groupOrder,
       schemaName: schemaName,
       aiFillable: field.system?.ai_fillable !== false,
@@ -720,6 +725,7 @@ export class CanvasService {
         groupsMap.set(key, {
           id: key,
           label: field.groupLabel,
+          icon: field.groupIcon || '',
           schemaName: field.schemaName,
           fields: [],
           isCore: field.schemaName === 'Core'

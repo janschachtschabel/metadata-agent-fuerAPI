@@ -1,0 +1,67 @@
+<!-- Vocabulary Tree Picker - Hierarchical selection with search -->
+<div class="vocab-tree-picker" *ngIf="open">
+  <div class="picker-backdrop" (click)="close()"></div>
+  
+  <div class="picker-panel" [ngStyle]="panelStyle">
+    <!-- Header: Search + Close -->
+    <div class="picker-header">
+      <mat-form-field appearance="outline" class="filter-field" subscriptSizing="dynamic">
+        <mat-label>{{ 'FIELD.VOCAB_FILTER' | translate }}</mat-label>
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput
+               #filterInput
+               [(ngModel)]="filterText"
+               (ngModelChange)="onFilterChange()"
+               autocomplete="off">
+        <button *ngIf="filterText" matIconSuffix mat-icon-button (click)="clearFilter()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </mat-form-field>
+      <button class="close-btn" mat-icon-button (click)="close()" aria-label="Close">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <!-- Tree List -->
+    <div class="tree-list" role="listbox">
+      <div *ngFor="let node of flatVisibleNodes; trackBy: trackByUri"
+           class="tree-node"
+           [class.depth-0]="node.depth === 0"
+           [class.depth-1]="node.depth === 1"
+           [class.depth-2]="node.depth === 2"
+           [class.depth-3]="node.depth >= 3"
+           [class.has-children]="node.children.length > 0"
+           [class.selected]="isSelected(node)"
+           [class.filter-match]="node.matchesFilter"
+           [style.padding-left.px]="16 + node.depth * 24"
+           role="option"
+           [attr.aria-selected]="isSelected(node)">
+
+        <!-- Expand/Collapse Arrow -->
+        <button *ngIf="node.children.length > 0"
+                class="expand-btn"
+                (click)="toggleExpand(node, $event)"
+                [attr.aria-label]="node.expanded ? 'Collapse' : 'Expand'">
+          <mat-icon>{{ node.expanded ? 'expand_more' : 'chevron_right' }}</mat-icon>
+        </button>
+        <span *ngIf="node.children.length === 0" class="expand-spacer"></span>
+
+        <!-- Checkbox + Label -->
+        <mat-checkbox
+          [checked]="isSelected(node)"
+          (change)="toggleSelection(node)"
+          color="primary"
+          class="node-checkbox">
+          <span class="node-label" [class.bold]="node.children.length > 0 && node.depth === 0">
+            {{ node.concept.label }}
+          </span>
+        </mat-checkbox>
+      </div>
+
+      <!-- Empty state -->
+      <div *ngIf="flatVisibleNodes.length === 0" class="empty-state">
+        {{ 'FIELD.VOCAB_NO_RESULTS' | translate }}
+      </div>
+    </div>
+  </div>
+</div>

@@ -195,7 +195,7 @@
         <!-- Group Header -->
         <div class="group-header" (click)="group.collapsed = !group.collapsed">
           <div class="group-title">
-            <mat-icon>description</mat-icon>
+            <mat-icon>{{ group.icon || 'folder' }}</mat-icon>
             <h3>{{ group.label }}</h3>
           </div>
           <div class="group-info" *ngIf="showFieldActions">

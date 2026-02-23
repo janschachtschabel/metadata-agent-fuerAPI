@@ -151,8 +151,51 @@
       [disabled]="field.status === FieldStatus.EXTRACTING || readonly">
     </textarea>
 
-    <!-- Regular text/array fields: inline chips + textarea with autocomplete -->
-    <div class="inline-chips-input" *ngIf="!isSpecialDatatype()">
+    <!-- === Tree Picker fields (vocab with >=5 concepts or hierarchical) === -->
+    <div class="inline-chips-input picker-trigger"
+         *ngIf="!isSpecialDatatype() && useTreePicker()"
+         (mousedown)="!readonly && !pickerOpen && openPicker(); $event.preventDefault()">
+      <mat-chip-set
+        *ngIf="(field.multiple || field.datatype === 'array') && field.value?.length"
+        class="chip-container"
+        aria-label="Selected values">
+        <mat-chip *ngFor="let chip of field.value" highlighted (removed)="!readonly && removeChip(chip)">
+          {{ getChipDisplayValue(chip) }}
+          <button *ngIf="!readonly" matChipRemove type="button" (mousedown)="$event.stopPropagation()">
+            <mat-icon fontSet="material-icons-outlined">cancel</mat-icon>
+          </button>
+        </mat-chip>
+      </mat-chip-set>
+      <!-- Single-value display for non-array fields -->
+      <input
+        matInput
+        [value]="field.value ? getChipDisplayValue(field.value) : ''"
+        [placeholder]="field.description || ''"
+        readonly
+        class="picker-display-input"
+        *ngIf="!(field.multiple || field.datatype === 'array')">
+      <!-- Input for array fields (collapses when chips are present) -->
+      <input
+        matInput
+        value=""
+        [placeholder]="field.value?.length ? '' : (field.description || placeholderVocabPicker)"
+        readonly
+        class="picker-display-input"
+        [class.collapsed]="field.value?.length"
+        *ngIf="(field.multiple || field.datatype === 'array')">
+    </div>
+
+    <!-- Dropdown arrow for tree picker fields -->
+    <mat-icon
+      *ngIf="useTreePicker() && !isSpecialDatatype()"
+      matIconSuffix
+      class="dropdown-arrow"
+      (mousedown)="!readonly && !pickerOpen && openPicker(); $event.preventDefault()">
+      arrow_drop_down
+    </mat-icon>
+
+    <!-- === Regular text/array fields: inline chips + textarea with autocomplete === -->
+    <div class="inline-chips-input" *ngIf="!isSpecialDatatype() && !useTreePicker()">
       <mat-chip-set
         *ngIf="(field.multiple || field.datatype === 'array') && field.value?.length"
         class="chip-container"
@@ -160,7 +203,7 @@
         <mat-chip *ngFor="let chip of field.value" highlighted (removed)="!readonly && removeChip(chip)">
           {{ getChipDisplayValue(chip) }}
           <button *ngIf="!readonly" matChipRemove type="button">
-            <mat-icon>cancel</mat-icon>
+            <mat-icon fontSet="material-icons-outlined">cancel</mat-icon>
           </button>
         </mat-chip>
       </mat-chip-set>
@@ -176,21 +219,21 @@
         (keypress)="onKeyPress($event)"
         [disabled]="field.status === FieldStatus.EXTRACTING || readonly"
         [matAutocomplete]="auto"
-        [placeholder]="field.description || ((field.multiple || field.datatype === 'array') ? ('FIELD.ARRAY_PLACEHOLDER' | translate) : '')"
+        [placeholder]="field.description || ((field.multiple || field.datatype === 'array') ? placeholderArrayInput : '')"
         #autoTrigger="matAutocompleteTrigger">
       </textarea>
     </div>
 
-    <!-- Dropdown arrow for vocabulary fields -->
+    <!-- Dropdown arrow for non-tree-picker vocabulary fields -->
     <mat-icon
-      *ngIf="hasVocabulary() && !isSpecialDatatype()"
+      *ngIf="hasVocabulary() && !isSpecialDatatype() && !useTreePicker()"
       matIconSuffix
       class="dropdown-arrow"
       (click)="autocompleteTrigger?.openPanel()">
       arrow_drop_down
     </mat-icon>
 
-    <!-- Autocomplete panel -->
+    <!-- Autocomplete panel (for non-tree-picker fields) -->
     <mat-autocomplete #auto="matAutocomplete" (optionSelected)="selectOption($event.option.value)">
       <mat-option *ngFor="let option of filteredOptions" [value]="option">
         {{ option }}
@@ -210,6 +253,19 @@
       {{ 'FIELD.STATUS.EXTRACTING' | translate }}
     </mat-hint>
   </mat-form-field>
+
+  <!-- Vocabulary Tree Picker (opens as overlay below the field) -->
+  <div class="tree-picker-anchor" *ngIf="useTreePicker()">
+    <app-vocab-tree-picker
+      [concepts]="field.vocabulary?.concepts || []"
+      [hierarchical]="!!(field.vocabulary && (field.vocabulary)['hierarchical'])"
+      [multiple]="field.multiple || field.datatype === 'array'"
+      [selectedValues]="getSelectedValues()"
+      [open]="pickerOpen"
+      (selectionChange)="onTreeSelectionChange($event)"
+      (closed)="closePicker()">
+    </app-vocab-tree-picker>
+  </div>
 
   <!-- Support text below field (outside mat-form-field for reliable rendering) -->
   <div class="support-text required" *ngIf="field.isRequired && field.status === FieldStatus.EMPTY && !validationError && !validationWarning">

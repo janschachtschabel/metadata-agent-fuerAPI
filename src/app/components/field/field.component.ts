@@ -8,9 +8,11 @@ import {
   ChangeDetectorRef,
   OnInit,
   OnChanges,
+  OnDestroy,
   SimpleChanges,
   ViewChild
 } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -30,6 +32,7 @@ import { TextFieldModule } from '@angular/cdk/text-field';
 
 import { CanvasFieldState, FieldStatus } from '../../shared/models/canvas.models';
 import { FieldValidationService, VocabularyDef } from '../../core/field-validation.service';
+import { VocabTreePickerComponent } from '../shared/vocab-tree-picker/vocab-tree-picker.component';
 
 const DE_DATE_FORMATS = {
   parse: { dateInput: 'DD.MM.YYYY', timeInput: 'HH:MM' },
@@ -89,7 +92,8 @@ class GermanDateAdapter extends NativeDateAdapter {
     MatNativeDateModule,
     MatRadioModule,
     NgxMatTimepickerModule,
-    TextFieldModule
+    TextFieldModule,
+    VocabTreePickerComponent
   ],
   providers: [
     { provide: MAT_DATE_LOCALE, useValue: 'de-DE' },
@@ -100,7 +104,7 @@ class GermanDateAdapter extends NativeDateAdapter {
   styleUrls: ['./field.component.scss'],
   changeDetection: ChangeDetectionStrategy.Default
 })
-export class FieldComponent implements OnInit, OnChanges {
+export class FieldComponent implements OnInit, OnChanges, OnDestroy {
   @Input() field!: CanvasFieldState;
   @Input() readonly = false;
   @Input() showActions = true;
@@ -116,9 +120,18 @@ export class FieldComponent implements OnInit, OnChanges {
   dateValue: Date | null = null;
   filteredOptions: string[] = [];
   
+  // Tree picker state
+  pickerOpen = false;
+  
   // Validation state
   validationError: string | null = null;
   validationWarning: string | null = null;
+  
+  // Pre-resolved placeholder texts (avoids translate pipe issues in property bindings
+  // under OnPush ancestors, e.g. in browser extension web-component context)
+  placeholderVocabPicker = '';
+  placeholderArrayInput = '';
+  private i18nSubs: Subscription[] = [];
   
   constructor(
     private cdr: ChangeDetectorRef,
@@ -129,6 +142,27 @@ export class FieldComponent implements OnInit, OnChanges {
   ngOnInit(): void {
     this.updateInputValue();
     this.updateFilteredOptions();
+    this.resolveTranslatedPlaceholders();
+    // Re-resolve when translations arrive or language changes
+    this.i18nSubs.push(
+      this.translate.onTranslationChange.subscribe(() => {
+        this.resolveTranslatedPlaceholders();
+        this.cdr.markForCheck();
+      }),
+      this.translate.onLangChange.subscribe(() => {
+        this.resolveTranslatedPlaceholders();
+        this.cdr.markForCheck();
+      })
+    );
+  }
+  
+  ngOnDestroy(): void {
+    this.i18nSubs.forEach(s => s.unsubscribe());
+  }
+  
+  private resolveTranslatedPlaceholders(): void {
+    this.placeholderVocabPicker = this.translate.instant('FIELD.VOCAB_OPEN_PICKER');
+    this.placeholderArrayInput = this.translate.instant('FIELD.ARRAY_PLACEHOLDER');
   }
   
   ngOnChanges(changes: SimpleChanges): void {
@@ -526,6 +560,46 @@ export class FieldComponent implements OnInit, OnChanges {
   
   hasVocabulary(): boolean {
     return !!this.field.vocabulary?.concepts?.length;
+  }
+
+  /**
+   * Check if field should use the tree picker instead of autocomplete dropdown.
+   * Used for vocabularies with >= 5 concepts or hierarchical vocabularies.
+   */
+  useTreePicker(): boolean {
+    if (!this.field.vocabulary?.concepts?.length) return false;
+    if (this.isRadioField()) return false;
+    if (this.isSpecialDatatype()) return false;
+    const isHierarchical = !!(this.field.vocabulary as any).hierarchical;
+    const hasManyOptions = this.field.vocabulary.concepts.length >= 5;
+    return isHierarchical || hasManyOptions;
+  }
+
+  openPicker(): void {
+    this.pickerOpen = true;
+  }
+
+  closePicker(): void {
+    this.pickerOpen = false;
+  }
+
+  getSelectedValues(): string[] {
+    if (!this.field.value) return [];
+    if (Array.isArray(this.field.value)) return this.field.value;
+    return [this.field.value];
+  }
+
+  onTreeSelectionChange(selected: string[]): void {
+    if (this.field.multiple || this.field.datatype === 'array') {
+      this.valueChange.emit(selected);
+    } else {
+      this.valueChange.emit(selected.length > 0 ? selected[0] : null);
+      // For single-select, close the picker after selection
+      if (selected.length > 0) {
+        this.pickerOpen = false;
+      }
+    }
+    this.validationError = null;
   }
   
   /**

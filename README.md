@@ -40,7 +40,7 @@ Nutzt die **Metadata Agent API** als Backend fuer KI-gesteuerte Metadaten-Extrak
 ```bash
 npm install
 npm start          # http://localhost:4200
-npm run build      # Produktions-Build
+npm run build      # Produktions-Build (mit Hashing)
 ```
 
 ---
@@ -48,6 +48,16 @@ npm run build      # Produktions-Build
 ## Web Component Einbettung
 
 Die Komponente wird als Angular Custom Element (`<metadata-agent-canvas>`) ausgeliefert und kann ohne iframe in jede HTML-Seite eingebettet werden.
+
+### Erforderliche Schriften
+
+Die Webkomponente nutzt **Roboto** als Textschrift sowie **Material Icons** (filled + outlined). Diese muessen **vor** dem JS-Bundle geladen werden:
+
+```html
+<!-- Schriften (alle drei werden benoetigt) -->
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined" rel="stylesheet">
+```
 
 ### JS-Bundle einbinden
 
@@ -598,13 +608,48 @@ export const environment = {
 </metadata-agent-canvas>
 ```
 
-## Deployment
+## Build & Deployment
+
+### Lokal / Docker / Vercel
 
 ```bash
 npm start              # Lokal: http://localhost:4200
+npm run build          # Produktions-Build (dist/ mit Hashing)
 docker build -t metadata-canvas . && docker run -p 80:80 metadata-canvas
 vercel deploy          # Vercel
 ```
+
+### Build fuer Browser-Extension + API-Auslieferung
+
+Die `extension`-Konfiguration erzeugt Dateien **ohne Hashing** (wichtig fuer Extension-Einbindung):
+
+```bash
+# 1. Build ohne Dateinamen-Hashing
+npx ng build --configuration extension
+# -> dist-extension/main.js, polyfills.js, runtime.js, styles.css
+
+# 2. In API kopieren (fuer /widget/dist/ Auslieferung)
+copy dist-extension\main.js      ..\metadata-agent-api\src\static\widget\dist\
+copy dist-extension\polyfills.js  ..\metadata-agent-api\src\static\widget\dist\
+copy dist-extension\runtime.js    ..\metadata-agent-api\src\static\widget\dist\
+copy dist-extension\styles.css    ..\metadata-agent-api\src\static\widget\dist\
+copy dist-extension\assets\i18n\* ..\metadata-agent-api\src\static\widget\assets\i18n\
+
+# 3. In Browser-Plugin kopieren
+copy dist-extension\main.js      ..\metadata-browser-plugin-fuerAPI\webcomponent\
+copy dist-extension\polyfills.js  ..\metadata-browser-plugin-fuerAPI\webcomponent\
+copy dist-extension\runtime.js    ..\metadata-browser-plugin-fuerAPI\webcomponent\
+copy dist-extension\styles.css    ..\metadata-browser-plugin-fuerAPI\webcomponent\
+copy dist-extension\assets\i18n\* ..\metadata-browser-plugin-fuerAPI\webcomponent\assets\i18n\
+```
+
+### Build-Konfigurationen (angular.json)
+
+| Konfiguration | Output | Hashing | Verwendung |
+|---------------|--------|---------|------------|
+| `production` | `dist/` | Ja | Standalone, Vercel, Docker |
+| `extension` | `dist-extension/` | Nein | Browser-Plugin, API-Widget |
+| `development` | — | — | Lokale Entwicklung (`ng serve`) |
 
 ## Technologie-Stack
 
