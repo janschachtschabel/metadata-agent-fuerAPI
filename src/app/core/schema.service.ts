@@ -41,6 +41,7 @@ interface SchemaManifest {
 
 interface CoreSchema {
   fields: FieldDefinition[];
+  groups: any[];
 }
 
 /**
@@ -118,7 +119,7 @@ export class SchemaService {
       const version = this.currentContext!.version;
       
       const response = await this.api.getSchema(context, version, 'core.json');
-      this.coreSchema = { fields: response.fields as FieldDefinition[] };
+      this.coreSchema = { fields: response.fields as FieldDefinition[], groups: (response as any).groups || [] };
       this.config.debug(`Core schema loaded from API: ${this.coreSchema.fields.length} fields`);
       return this.coreSchema;
     } catch (error) {
@@ -258,7 +259,11 @@ export class SchemaService {
     return this.loadContentTypeSchema(schemaFile);
   }
 
-  async getGroups(schemaFile: string): Promise<any[] | null> {
+  async getGroups(schemaFile: string): Promise<any[]> {
+    // Use cached core schema groups if available
+    if (schemaFile === 'core.json' && this.coreSchema) {
+      return this.coreSchema.groups;
+    }
     try {
       const context = this.currentContext?.key || 'default';
       const version = this.currentContext?.version || 'latest';

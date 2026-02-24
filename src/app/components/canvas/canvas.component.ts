@@ -15,6 +15,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { Subject, takeUntil } from 'rxjs';
 
+import { WIDGET_VERSION } from '../../version';
 import { CanvasService } from '../../core/canvas.service';
 import { SchemaService } from '../../core/schema.service';
 import { ApiService } from '../../core/api.service';
@@ -57,6 +58,9 @@ import { PrueftischLayoutComponent } from '../layouts/prueftisch-layout/prueftis
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CanvasComponent implements OnInit, OnDestroy, OnChanges {
+  /** Readable widget version (accessible via element.version) */
+  readonly version = WIDGET_VERSION;
+
   // ===== INPUT PROPERTIES =====
   
   @Input() set apiUrl(value: string) {

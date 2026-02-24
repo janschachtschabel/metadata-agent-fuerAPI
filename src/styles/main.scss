@@ -214,6 +214,14 @@ ngx-mat-timepicker-container {
   }
 }
 
+// Material Icons Outlined — override Angular Material's default font-family
+// (mat-icon with fontSet="material-icons-outlined" adds this CSS class,
+//  but Angular Material's theme styles override font-family with 'Material Icons')
+.material-icons-outlined,
+.mat-icon.material-icons-outlined {
+  font-family: 'Material Icons Outlined' !important;
+}
+
 // Utility classes
 .visually-hidden {
   position: absolute;
