@@ -14,6 +14,7 @@
     [inputMode]="inputModeValue"
     [backgroundColor]="backgroundColor"
     [columns]="effectiveColumns"
+    [flatGroups]="_flatGroups"
     [showInputArea]="effectiveShowInputArea"
     [showStatusBar]="effectiveShowStatusBar"
     [showCoreFields]="effectiveShowCoreFields"
@@ -23,8 +24,15 @@
     [showFieldActions]="effectiveShowFieldActions"
     [showContentTypeOnly]="_showContentTypeOnly"
     [showUploadButton]="effectiveShowUploadButton"
+    [showSaveButton]="effectiveShowSaveButton"
+    [showJsonLoader]="effectiveShowJsonLoader"
+    [showLanguageSwitcher]="effectiveShowLanguageSwitcher"
+    [showContentType]="effectiveShowContentType"
+    [showResetButton]="effectiveShowResetButton"
     [readonly]="effectiveReadonly"
     [highlightAi]="_highlightAi"
+    [showPreview]="_showPreview"
+    [screenshotEnabled]="state?.screenshotEnabled ?? true"
     (userTextChange)="userText = $event"
     (sourceUrlChange)="sourceUrl = $event"
     (nodeIdChange)="nodeId = $event"
@@ -39,7 +47,8 @@
     (downloadJson)="downloadJson()"
     (submit)="submit()"
     (upload)="uploadToRepository()"
-    (dismissError)="canvas.clearError()">
+    (dismissError)="canvas.clearError()"
+    (screenshotToggle)="canvas.setScreenshotEnabled($event)">
   </app-default-layout>
   
   <!-- Plugin Layout (Compact sidebar for browser extension) -->
@@ -53,6 +62,7 @@
     [inputMode]="inputModeValue"
     [backgroundColor]="backgroundColor"
     [columns]="effectiveColumns"
+    [flatGroups]="_flatGroups"
     [showInputArea]="effectiveShowInputArea"
     [showStatusBar]="effectiveShowStatusBar"
     [showCoreFields]="effectiveShowCoreFields"
@@ -61,9 +71,15 @@
     [showFloatingControls]="effectiveShowFloatingControls"
     [showContentTypeOnly]="_showContentTypeOnly"
     [showUploadButton]="effectiveShowUploadButton"
+    [showSaveButton]="effectiveShowSaveButton"
+    [showLanguageSwitcher]="effectiveShowLanguageSwitcher"
+    [showContentType]="effectiveShowContentType"
+    [showResetButton]="effectiveShowResetButton"
     [showPageMode]="_showPageMode"
     [readonly]="effectiveReadonly"
     [highlightAi]="_highlightAi"
+    [showPreview]="_showPreview"
+    [screenshotEnabled]="state?.screenshotEnabled ?? true"
     (userTextChange)="userText = $event"
     (sourceUrlChange)="sourceUrl = $event"
     (nodeIdChange)="nodeId = $event"
@@ -76,7 +92,8 @@
     (selectContentType)="selectContentType($event)"
     (fieldValueChange)="canvas.updateFieldValue($event.fieldId, $event.value)"
     (submit)="submit()"
-    (upload)="uploadToRepository()">
+    (upload)="uploadToRepository()"
+    (screenshotToggle)="canvas.setScreenshotEnabled($event)">
   </app-plugin-layout>
   
   <!-- Dialog Layout (Compact review dialog) -->
@@ -86,6 +103,7 @@
     [contentTypes]="contentTypes"
     [backgroundColor]="backgroundColor"
     [columns]="effectiveColumns"
+    [flatGroups]="_flatGroups"
     [userText]="userText"
     [sourceUrl]="sourceUrl"
     [nodeId]="nodeId"
@@ -98,8 +116,14 @@
     [showFloatingControls]="effectiveShowFloatingControls"
     [showContentTypeOnly]="_showContentTypeOnly"
     [showUploadButton]="effectiveShowUploadButton"
+    [showSaveButton]="effectiveShowSaveButton"
+    [showLanguageSwitcher]="effectiveShowLanguageSwitcher"
+    [showContentType]="effectiveShowContentType"
+    [showResetButton]="effectiveShowResetButton"
     [readonly]="effectiveReadonly"
     [highlightAi]="_highlightAi"
+    [showPreview]="_showPreview"
+    [screenshotEnabled]="state?.screenshotEnabled ?? true"
     (userTextChange)="userText = $event"
     (sourceUrlChange)="sourceUrl = $event"
     (nodeIdChange)="nodeId = $event"
@@ -111,7 +135,8 @@
     (fieldValueChange)="canvas.updateFieldValue($event.fieldId, $event.value)"
     (submit)="submit()"
     (upload)="uploadToRepository()"
-    (reset)="reset()">
+    (reset)="reset()"
+    (screenshotToggle)="canvas.setScreenshotEnabled($event)">
   </app-dialog-layout>
   
   <!-- Detail Layout (Multi-column read-only preview) -->
@@ -121,6 +146,7 @@
     [contentTypes]="contentTypes"
     [backgroundColor]="backgroundColor"
     [columns]="effectiveColumns"
+    [flatGroups]="_flatGroups"
     [userText]="userText"
     [sourceUrl]="sourceUrl"
     [nodeId]="nodeId"
@@ -132,8 +158,13 @@
     [showFieldActions]="effectiveShowFieldActions"
     [showFloatingControls]="effectiveShowFloatingControls"
     [showContentTypeOnly]="_showContentTypeOnly"
+    [showLanguageSwitcher]="effectiveShowLanguageSwitcher"
+    [showContentType]="effectiveShowContentType"
+    [showResetButton]="effectiveShowResetButton"
     [readonly]="effectiveReadonly"
     [highlightAi]="_highlightAi"
+    [showPreview]="_showPreview"
+    [screenshotEnabled]="state?.screenshotEnabled ?? true"
     (userTextChange)="userText = $event"
     (sourceUrlChange)="sourceUrl = $event"
     (nodeIdChange)="nodeId = $event"
@@ -143,16 +174,18 @@
     (inputModeChange)="_inputMode = $event"
     (selectContentType)="selectContentType($event)"
     (fieldValueChange)="canvas.updateFieldValue($event.fieldId, $event.value)"
-    (reset)="reset()">
+    (reset)="reset()"
+    (screenshotToggle)="canvas.setScreenshotEnabled($event)">
   </app-detail-layout>
   
-  <!-- Metadatenprüfdialog Layout (Dialog mode for review) -->
-  <app-metadatenpruefdialog-layout 
-    *ngSwitchCase="'metadatenpruefdialog'"
+  <!-- Clean Layout (Minimal borderless for embedding/review) -->
+  <app-clean-layout 
+    *ngSwitchCase="'clean'"
     [state]="state"
     [contentTypes]="contentTypes"
     [backgroundColor]="backgroundColor"
     [columns]="effectiveColumns"
+    [flatGroups]="_flatGroups"
     [userText]="userText"
     [sourceUrl]="sourceUrl"
     [nodeId]="nodeId"
@@ -164,8 +197,13 @@
     [showFieldActions]="effectiveShowFieldActions"
     [showFloatingControls]="effectiveShowFloatingControls"
     [showContentTypeOnly]="_showContentTypeOnly"
+    [showLanguageSwitcher]="effectiveShowLanguageSwitcher"
+    [showContentType]="effectiveShowContentType"
+    [showResetButton]="effectiveShowResetButton"
     [readonly]="effectiveReadonly"
     [highlightAi]="_highlightAi"
+    [showPreview]="_showPreview"
+    [screenshotEnabled]="state?.screenshotEnabled ?? true"
     (userTextChange)="userText = $event"
     (sourceUrlChange)="sourceUrl = $event"
     (nodeIdChange)="nodeId = $event"
@@ -175,17 +213,18 @@
     (inputModeChange)="_inputMode = $event"
     (selectContentType)="selectContentType($event)"
     (fieldValueChange)="canvas.updateFieldValue($event.fieldId, $event.value)"
-    (reset)="reset()">
-  </app-metadatenpruefdialog-layout>
+    (reset)="reset()"
+    (screenshotToggle)="canvas.setScreenshotEnabled($event)">
+  </app-clean-layout>
   
   <!-- Prüftisch Layout (Review table with card-based display) -->
   <app-prueftisch-layout 
     *ngSwitchCase="'prueftisch'"
-    [layoutVariant]="'prueftisch'"
     [state]="state"
     [contentTypes]="contentTypes"
     [backgroundColor]="backgroundColor"
     [columns]="effectiveColumns"
+    [flatGroups]="_flatGroups"
     [userText]="userText"
     [sourceUrl]="sourceUrl"
     [nodeId]="nodeId"
@@ -197,8 +236,13 @@
     [showFieldActions]="effectiveShowFieldActions"
     [showFloatingControls]="effectiveShowFloatingControls"
     [showContentTypeOnly]="_showContentTypeOnly"
+    [showLanguageSwitcher]="effectiveShowLanguageSwitcher"
+    [showContentType]="effectiveShowContentType"
+    [showResetButton]="effectiveShowResetButton"
     [readonly]="effectiveReadonly"
     [highlightAi]="_highlightAi"
+    [showPreview]="_showPreview"
+    [screenshotEnabled]="state?.screenshotEnabled ?? true"
     (userTextChange)="userText = $event"
     (sourceUrlChange)="sourceUrl = $event"
     (nodeIdChange)="nodeId = $event"
@@ -208,17 +252,18 @@
     (inputModeChange)="_inputMode = $event"
     (selectContentType)="selectContentType($event)"
     (fieldValueChange)="canvas.updateFieldValue($event.fieldId, $event.value)"
-    (reset)="reset()">
+    (reset)="reset()"
+    (screenshotToggle)="canvas.setScreenshotEnabled($event)">
   </app-prueftisch-layout>
   
-  <!-- Prüftisch Groß Layout (2-column review table) -->
-  <app-prueftisch-layout 
-    *ngSwitchCase="'prueftisch-gross'"
-    [layoutVariant]="'prueftisch-gross'"
+  <!-- Prüftisch Org Layout (organizational review table) -->
+  <app-prueftisch-org-layout 
+    *ngSwitchCase="'prueftisch-org'"
     [state]="state"
     [contentTypes]="contentTypes"
     [backgroundColor]="backgroundColor"
     [columns]="effectiveColumns"
+    [flatGroups]="_flatGroups"
     [userText]="userText"
     [sourceUrl]="sourceUrl"
     [nodeId]="nodeId"
@@ -230,8 +275,13 @@
     [showFieldActions]="effectiveShowFieldActions"
     [showFloatingControls]="effectiveShowFloatingControls"
     [showContentTypeOnly]="_showContentTypeOnly"
+    [showLanguageSwitcher]="effectiveShowLanguageSwitcher"
+    [showContentType]="effectiveShowContentType"
+    [showResetButton]="effectiveShowResetButton"
     [readonly]="effectiveReadonly"
     [highlightAi]="_highlightAi"
+    [showPreview]="_showPreview"
+    [screenshotEnabled]="state?.screenshotEnabled ?? true"
     (userTextChange)="userText = $event"
     (sourceUrlChange)="sourceUrl = $event"
     (nodeIdChange)="nodeId = $event"
@@ -241,7 +291,8 @@
     (inputModeChange)="_inputMode = $event"
     (selectContentType)="selectContentType($event)"
     (fieldValueChange)="canvas.updateFieldValue($event.fieldId, $event.value)"
-    (reset)="reset()">
-  </app-prueftisch-layout>
+    (reset)="reset()"
+    (screenshotToggle)="canvas.setScreenshotEnabled($event)">
+  </app-prueftisch-org-layout>
   
 </ng-container>

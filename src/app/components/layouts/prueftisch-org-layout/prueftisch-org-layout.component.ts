@@ -13,29 +13,24 @@ import { MatButtonModule } from '@angular/material/button';
 
 import { CanvasState, ContentType, CanvasFieldState, FieldGroup, FieldStatus } from '../../../shared/models/canvas.models';
 import { FieldComponent } from '../../field/field.component';
-import { LanguageSwitcherComponent } from '../../language-switcher/language-switcher.component';
 import { InputAreaComponent } from '../../shared/input-area/input-area.component';
 import { StatusBarComponent } from '../../shared/status-bar/status-bar.component';
+import { LanguageSwitcherComponent } from '../../language-switcher/language-switcher.component';
 import { PreviewThumbnailComponent } from '../../shared/preview-thumbnail/preview-thumbnail.component';
 
 /**
- * Prüftisch Layout Component
+ * Prüftisch Org Layout Component
  * 
- * Review table layout for metadata inspection in edu-sharing.
- * Clean, card-based display with icons in group headers.
- * No input area, no status bar - just fields and floating controls.
- * 
- * Used in:
- * - edu-sharing Prüftisch (Review Table)
- * - Metadata inspection workflows
- * - Quality assurance processes
+ * edu-sharing organizational review table layout.
+ * Light gray group headers with bottom border, borderless fields,
+ * row-wise field arrangement with detail-view-like typography.
  * 
  * Activation:
- * - URL: ?layout=prueftisch
- * - Attribute: layout="prueftisch"
+ * - URL: ?layout=prueftisch-org
+ * - Attribute: layout="prueftisch-org"
  */
 @Component({
-  selector: 'app-prueftisch-layout',
+  selector: 'app-prueftisch-org-layout',
   standalone: true,
   imports: [
     CommonModule,
@@ -44,17 +39,16 @@ import { PreviewThumbnailComponent } from '../../shared/preview-thumbnail/previe
     MatMenuModule,
     MatButtonModule,
     FieldComponent,
-    LanguageSwitcherComponent,
     InputAreaComponent,
     StatusBarComponent,
+    LanguageSwitcherComponent,
     PreviewThumbnailComponent
   ],
-  templateUrl: './prueftisch-layout.component.html',
-  styleUrls: ['./prueftisch-layout.component.scss'],
+  templateUrl: './prueftisch-org-layout.component.html',
+  styleUrls: ['./prueftisch-org-layout.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class PrueftischLayoutComponent {
-  // Data from parent
+export class PrueftischOrgLayoutComponent {
   @Input() state: CanvasState | null = null;
   @Input() contentTypes: ContentType[] = [];
   @Input() backgroundColor = '';
@@ -64,19 +58,18 @@ export class PrueftischLayoutComponent {
   @Input() sourceUrl = '';
   @Input() nodeId = '';
   @Input() inputMode: 'text' | 'url' | 'nodeId' = 'text';
-  
-  // Element visibility
+
   @Input() showInputArea = false;
   @Input() showStatusBar = false;
   @Input() showCoreFields = true;
   @Input() showSpecialFields = true;
-  @Input() showFieldActions = true;
+  @Input() showFieldActions = false;
   @Input() showFloatingControls = true;
   @Input() showContentTypeOnly = false;
   @Input() showLanguageSwitcher = true;
   @Input() showContentType = true;
   @Input() showResetButton = true;
-  @Input() readonly = false;
+  @Input() readonly = true;
   @Input() highlightAi = true;
   @Input() flatGroups = false;
   @Input() showPreview = true;
@@ -112,8 +105,7 @@ export class PrueftischLayoutComponent {
       isCore: false
     }];
   }
-  
-  // Events
+
   @Output() userTextChange = new EventEmitter<string>();
   @Output() sourceUrlChange = new EventEmitter<string>();
   @Output() nodeIdChange = new EventEmitter<string>();
@@ -125,25 +117,22 @@ export class PrueftischLayoutComponent {
   @Output() screenshotToggle = new EventEmitter<boolean>();
   @Output() selectContentType = new EventEmitter<ContentType>();
   @Output() fieldValueChange = new EventEmitter<{ fieldId: string; value: any }>();
-  
-  // Track functions
+
   trackByFieldId(index: number, field: CanvasFieldState): string {
     return field.fieldId;
   }
-  
+
   trackByGroupId(index: number, group: FieldGroup): string {
     return group.id;
   }
-  
-  // Helpers
+
   getFilledCount(group: FieldGroup): number {
     const flatFields = this.getFlattenedFields(group.fields);
     return flatFields.filter(f => f.status === FieldStatus.FILLED).length;
   }
-  
+
   getFlattenedFields(fields: CanvasFieldState[]): CanvasFieldState[] {
     const flattened: CanvasFieldState[] = [];
-    
     for (const field of fields) {
       if (field.isParent && field.subFields && field.subFields.length > 0) {
         flattened.push(...field.subFields);
@@ -151,10 +140,9 @@ export class PrueftischLayoutComponent {
         flattened.push(field);
       }
     }
-    
     return flattened;
   }
-  
+
   getVisibleFields(fields: CanvasFieldState[]): CanvasFieldState[] {
     const flat = this.getFlattenedFields(fields);
     if (!this.readonly) return flat;
@@ -164,12 +152,13 @@ export class PrueftischLayoutComponent {
       return true;
     });
   }
-  
+
   getGroupIcon(group: FieldGroup): string {
-    // Map group IDs to Material icons
     const iconMap: Record<string, string> = {
       'beschreibung': 'description',
       'description': 'description',
+      'typisierung': 'fact_check',
+      'typing': 'fact_check',
       'paedagogisches': 'school',
       'pedagogical': 'school',
       'zielgruppe': 'groups',
@@ -178,13 +167,16 @@ export class PrueftischLayoutComponent {
       'technical': 'settings',
       'rechtliches': 'gavel',
       'legal': 'gavel',
+      'license': 'copyright',
+      'lizenz': 'copyright',
       'klassifikation': 'category',
       'classification': 'category',
+      'education': 'school',
+      'event': 'event',
+      'event_details': 'event',
       'core': 'star',
       'special': 'extension'
     };
-    
-    const groupId = group.id.toLowerCase();
-    return iconMap[groupId] || 'folder';
+    return iconMap[group.id.toLowerCase()] || 'folder';
   }
 }

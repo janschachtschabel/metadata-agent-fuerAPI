@@ -1,15 +1,16 @@
 import { LayoutConfig } from '../layout.models';
 
 /**
- * Metadatenprüfdialog Layout
+ * Clean Layout
  * 
- * Dialog layout for metadata review/validation in edu-sharing.
- * Based on viewer layout but optimized for review workflows.
+ * Minimal, borderless layout for embedding in dialogs or external applications.
+ * No input area, compact spacing, editable fields with floating controls.
  * 
  * USED IN:
  * - edu-sharing Metadatenprüfdialog
  * - Review/validation workflows
- * - External control via flying buttons
+ * - Clean embedded views
+ * - External control via events/buttons
  * 
  * FEATURES:
  * - No text input (controlled externally)
@@ -19,13 +20,14 @@ import { LayoutConfig } from '../layout.models';
  * - External control via events/buttons
  * 
  * ACTIVATION:
- * - URL: ?layout=metadatenpruefdialog
- * - Attribute: layout="metadatenpruefdialog"
+ * - URL: ?layout=clean
+ * - Attribute: layout="clean"
+ * - Alias: layout="metadatenpruefdialog"
  */
 export const METADATENPRUEFDIALOG_LAYOUT: LayoutConfig = {
-  name: 'metadatenpruefdialog',
-  i18nKey: 'LAYOUT.METADATENPRUEFDIALOG.NAME',
-  i18nDescription: 'LAYOUT.METADATENPRUEFDIALOG.DESCRIPTION',
+  name: 'clean',
+  i18nKey: 'LAYOUT.CLEAN.NAME',
+  i18nDescription: 'LAYOUT.CLEAN.DESCRIPTION',
   elements: {
     // Header - hidden for dialog embedding
     header: false,
@@ -55,13 +57,14 @@ export const METADATENPRUEFDIALOG_LAYOUT: LayoutConfig = {
     jsonLoader: false,
     saveButton: false,
     uploadButton: false,
+    floatingResetButton: true,
     languageSwitcher: true
   },
   style: {
     borderless: true,
     compact: true,  // Less padding for dialog
     columns: 1,
-    cssClass: 'layout-metadatenpruefdialog'
+    cssClass: 'layout-clean'
   },
   behavior: {
     readonly: false,  // Editable for corrections

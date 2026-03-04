@@ -84,6 +84,8 @@ export interface CanvasElements {
   saveButton: boolean;
   /** Upload/Submit button */
   uploadButton: boolean;
+  /** Reset button (in floating controls) */
+  floatingResetButton: boolean;
   /** Language switcher */
   languageSwitcher: boolean;
 }
@@ -137,7 +139,7 @@ export interface LayoutConfig {
 /**
  * Available layout presets
  */
-export type LayoutPreset = 'default' | 'plugin' | 'dialog' | 'detail' | 'metadatenpruefdialog' | 'prueftisch' | 'prueftisch-gross';
+export type LayoutPreset = 'default' | 'plugin' | 'dialog' | 'detail' | 'clean' | 'prueftisch' | 'prueftisch-org';
 
 /**
  * Maps integration modes to layout presets
@@ -183,11 +185,12 @@ export const MODE_LAYOUT_MAP: Record<string, LayoutPreset> = {
   'view': 'default',
   'readonly': 'default',
   
-  // === METADATENPRUEFDIALOG LAYOUT ===
-  'metadatenpruefdialog': 'metadatenpruefdialog',
-  'pruefung': 'metadatenpruefdialog',
-  'validation': 'metadatenpruefdialog',
-  'check': 'metadatenpruefdialog',
+  // === CLEAN LAYOUT ===
+  'clean': 'clean',
+  'metadatenpruefdialog': 'clean',
+  'pruefung': 'clean',
+  'validation': 'clean',
+  'check': 'clean',
   
   // === PRUEFTISCH LAYOUT ===
   'prueftisch': 'prueftisch',
@@ -195,11 +198,21 @@ export const MODE_LAYOUT_MAP: Record<string, LayoutPreset> = {
   'table': 'prueftisch',
   'qa': 'prueftisch',
   
-  // === PRUEFTISCH GROSS LAYOUT ===
-  'prueftisch-gross': 'prueftisch-gross',
-  'prueftisch-large': 'prueftisch-gross',
-  'reviewtable-large': 'prueftisch-gross',
-  'qa-large': 'prueftisch-gross'
+  // === PRUEFTISCH GROSS → alias for prueftisch (use columns=2 instead) ===
+  'prueftisch-gross': 'prueftisch',
+  'prueftisch-large': 'prueftisch',
+  'reviewtable-large': 'prueftisch',
+  'qa-large': 'prueftisch',
+  
+  // === PRUEFTISCH ORG LAYOUT ===
+  'prueftisch-org': 'prueftisch-org',
+  'reviewtable-org': 'prueftisch-org',
+  'qa-org': 'prueftisch-org',
+  
+  // === PRUEFTISCH ORG LARGE → alias for prueftisch-org (use columns=2 instead) ===
+  'prueftisch-org-large': 'prueftisch-org',
+  'reviewtable-org-large': 'prueftisch-org',
+  'qa-org-large': 'prueftisch-org'
 };
 
 /**
@@ -208,7 +221,7 @@ export const MODE_LAYOUT_MAP: Record<string, LayoutPreset> = {
  */
 export const CANVAS_INPUT_PARAMETERS = {
   // Layout Selection
-  layout: 'string: "default" | "plugin" | "dialog" | "detail" | "metadatenpruefdialog" | "prueftisch" | "prueftisch-gross"',
+  layout: 'string: "default" | "plugin" | "dialog" | "detail" | "clean" | "prueftisch" | "prueftisch-org"',
   mode: 'string: integration mode name',
   
   // API Configuration
@@ -220,13 +233,13 @@ export const CANVAS_INPUT_PARAMETERS = {
   viewerMode: 'boolean: backward compat, maps to readonly=true',
   readonly: 'boolean: disable all editing',
   borderless: 'boolean: remove borders for embedding',
+  flatGroups: 'boolean: merge all field groups into one group per schema (header = content type name)',
   
   // Element Visibility (all boolean)
   showHeader: 'boolean',
   showCloseButton: 'boolean',
   showInputArea: 'boolean',
   showExtractButton: 'boolean',
-  showResetButton: 'boolean',
   showStatusBar: 'boolean',
   showContentTypeSelector: 'boolean',
   showProgressBar: 'boolean',
@@ -235,11 +248,13 @@ export const CANVAS_INPUT_PARAMETERS = {
   showFieldActions: 'boolean',
   showGroupCollapse: 'boolean',
   showFooter: 'boolean',
-  showFloatingControls: 'boolean',
-  showJsonLoader: 'boolean',
-  showSaveButton: 'boolean',
-  showUploadButton: 'boolean',
-  showLanguageSwitcher: 'boolean',
+  showFloatingControls: 'boolean: master toggle for entire floating bar',
+  showJsonLoader: 'boolean: JSON file loader in floating bar (default/plugin)',
+  showSaveButton: 'boolean: save/submit button in floating bar',
+  showUploadButton: 'boolean: upload-to-repository button in floating bar',
+  showLanguageSwitcher: 'boolean: i18n language switcher pill in floating bar',
+  showContentType: 'boolean: content type split-button in floating bar',
+  showResetButton: 'boolean: reset button (input area + floating bar)',
   
   // Behavior
   controls: 'boolean: alias for showFloatingControls',

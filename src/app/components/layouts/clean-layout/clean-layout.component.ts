@@ -19,23 +19,25 @@ import { StatusBarComponent } from '../../shared/status-bar/status-bar.component
 import { PreviewThumbnailComponent } from '../../shared/preview-thumbnail/preview-thumbnail.component';
 
 /**
- * Prüftisch Layout Component
+ * Clean Layout Component
  * 
- * Review table layout for metadata inspection in edu-sharing.
- * Clean, card-based display with icons in group headers.
- * No input area, no status bar - just fields and floating controls.
+ * Minimal, borderless layout for embedding in dialogs or external applications.
+ * No text input area - controlled externally via events.
+ * Compact design with minimal margins for dialog embedding.
  * 
  * Used in:
- * - edu-sharing Prüftisch (Review Table)
- * - Metadata inspection workflows
- * - Quality assurance processes
+ * - edu-sharing Metadatenprüfdialog
+ * - Review/validation workflows
+ * - Clean embedded views
+ * - External control via flying buttons
  * 
  * Activation:
- * - URL: ?layout=prueftisch
- * - Attribute: layout="prueftisch"
+ * - URL: ?layout=clean
+ * - Attribute: layout="clean"
+ * - Alias: layout="metadatenpruefdialog"
  */
 @Component({
-  selector: 'app-prueftisch-layout',
+  selector: 'app-clean-layout',
   standalone: true,
   imports: [
     CommonModule,
@@ -49,16 +51,16 @@ import { PreviewThumbnailComponent } from '../../shared/preview-thumbnail/previe
     StatusBarComponent,
     PreviewThumbnailComponent
   ],
-  templateUrl: './prueftisch-layout.component.html',
-  styleUrls: ['./prueftisch-layout.component.scss'],
+  templateUrl: './clean-layout.component.html',
+  styleUrls: ['./clean-layout.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class PrueftischLayoutComponent {
+export class CleanLayoutComponent {
   // Data from parent
   @Input() state: CanvasState | null = null;
   @Input() contentTypes: ContentType[] = [];
   @Input() backgroundColor = '';
-  @Input() columns: 1 | 2 | 3 | 4 = 1;
+  @Input() columns: 1 | 2 | 3 | 4 = 2;
 
   @Input() userText = '';
   @Input() sourceUrl = '';
@@ -67,7 +69,7 @@ export class PrueftischLayoutComponent {
   
   // Element visibility
   @Input() showInputArea = false;
-  @Input() showStatusBar = false;
+  @Input() showStatusBar = true;
   @Input() showCoreFields = true;
   @Input() showSpecialFields = true;
   @Input() showFieldActions = true;
@@ -165,26 +167,4 @@ export class PrueftischLayoutComponent {
     });
   }
   
-  getGroupIcon(group: FieldGroup): string {
-    // Map group IDs to Material icons
-    const iconMap: Record<string, string> = {
-      'beschreibung': 'description',
-      'description': 'description',
-      'paedagogisches': 'school',
-      'pedagogical': 'school',
-      'zielgruppe': 'groups',
-      'target_audience': 'groups',
-      'technisches': 'settings',
-      'technical': 'settings',
-      'rechtliches': 'gavel',
-      'legal': 'gavel',
-      'klassifikation': 'category',
-      'classification': 'category',
-      'core': 'star',
-      'special': 'extension'
-    };
-    
-    const groupId = group.id.toLowerCase();
-    return iconMap[groupId] || 'folder';
-  }
 }

@@ -49,7 +49,8 @@ export const PLUGIN_LAYOUT: LayoutConfig = {
     jsonLoader: false,
     saveButton: true,
     uploadButton: true,
-    languageSwitcher: false
+    floatingResetButton: true,
+    languageSwitcher: true
   },
   style: {
     borderless: true,

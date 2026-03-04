@@ -229,6 +229,52 @@
   }
 }
 
+// Readonly mode: override disabled styling to keep normal colors
+.canvas-field.readonly-mode {
+  .md3-text-field {
+    // Keep normal text color for disabled inputs
+    ::ng-deep input:disabled,
+    ::ng-deep textarea:disabled,
+    ::ng-deep .mat-mdc-select-disabled .mat-mdc-select-value {
+      color: rgba(0, 0, 0, 0.87) !important;
+      -webkit-text-fill-color: rgba(0, 0, 0, 0.87) !important;
+    }
+
+    // Keep normal border color
+    ::ng-deep .mat-mdc-text-field-wrapper {
+      background: #ffffff !important;
+    }
+
+    ::ng-deep .mdc-notched-outline__leading,
+    ::ng-deep .mdc-notched-outline__notch,
+    ::ng-deep .mdc-notched-outline__trailing {
+      border-color: #c9cfdd !important;
+    }
+
+    // Keep normal label color
+    ::ng-deep .mat-mdc-floating-label {
+      color: rgba(0, 0, 0, 0.6) !important;
+    }
+  }
+
+  // Keep normal radio button colors
+  .radio-group mat-radio-button {
+    ::ng-deep .mdc-radio--disabled + label {
+      color: rgba(0, 0, 0, 0.87) !important;
+    }
+  }
+
+  // Keep normal chip colors
+  .chip-container mat-chip {
+    opacity: 1 !important;
+  }
+
+  // Hide chip input textarea when chips are present (placeholder like "Schlagwörter (kommagetrennt)")
+  .inline-chips-input mat-chip-set ~ textarea {
+    display: none !important;
+  }
+}
+
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }

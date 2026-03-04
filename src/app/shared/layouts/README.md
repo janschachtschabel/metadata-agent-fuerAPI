@@ -15,8 +15,8 @@ src/app/shared/layouts/
     ├── dialog.layout.ts         # Redaktionsdialog (Modal)
     ├── detail.layout.ts         # Detail/Preview (Read-Only, 4-spaltig)
     ├── metadatenpruefdialog.layout.ts
-    ├── prueftisch.layout.ts     # Prueftisch (1-spaltig)
-    └── prueftisch-gross.layout.ts  # Prueftisch gross (2-spaltig)
+    ├── prueftisch.layout.ts     # Prueftisch (columns per Attribut)
+    └── prueftisch-org.layout.ts   # Prueftisch Org (edu-sharing organisational, readonly)
 ```
 
 ## Layouts
@@ -28,7 +28,7 @@ src/app/shared/layouts/
 | `dialog` | 1 | Redaktionsdialog, Modal |
 | `detail` | 4 | Detail-Ansicht, Preview, Druck |
 | `metadatenpruefdialog` | 1 | edu-sharing Metadaten-Pruefung |
-| `prueftisch` | 1 | edu-sharing Prueftisch |
-| `prueftisch-gross` | 2 | edu-sharing Prueftisch gross |
+| `prueftisch` | 1 | edu-sharing Prueftisch (columns=2 fuer breit) |
+| `prueftisch-org` | 1 | edu-sharing organisatorischer Prueftisch, readonly (columns=2 fuer breit) |
 
 Siehe Haupt-README.md fuer die vollstaendige Element-Matrix und Beispiele.

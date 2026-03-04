@@ -16,11 +16,13 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
 import { CanvasState, ContentType, CanvasFieldState, FieldGroup, FieldStatus } from '../../../shared/models/canvas.models';
 import { FieldComponent } from '../../field/field.component';
 import { JsonLoaderComponent } from '../../json-loader/json-loader.component';
 import { LanguageSwitcherComponent } from '../../language-switcher/language-switcher.component';
+import { PreviewThumbnailComponent } from '../../shared/preview-thumbnail/preview-thumbnail.component';
 
 /**
  * Default Layout Component
@@ -48,9 +50,11 @@ import { LanguageSwitcherComponent } from '../../language-switcher/language-swit
     MatProgressBarModule,
     MatMenuModule,
     MatTooltipModule,
+    MatSlideToggleModule,
     FieldComponent,
     JsonLoaderComponent,
-    LanguageSwitcherComponent
+    LanguageSwitcherComponent,
+    PreviewThumbnailComponent
   ],
   templateUrl: './default-layout.component.html',
   styleUrls: ['./default-layout.component.scss'],
@@ -79,10 +83,49 @@ export class DefaultLayoutComponent {
   @Input() showFooter = true;
   @Input() showFloatingControls = true;
   @Input() showFieldActions = true;
-  @Input() showContentTypeOnly = false;  // OEH: Hide action buttons, show only content type
+  @Input() showContentTypeOnly = false;
   @Input() showUploadButton = false;
+  @Input() showSaveButton = true;
+  @Input() showJsonLoader = true;
+  @Input() showLanguageSwitcher = true;
+  @Input() showContentType = true;
+  @Input() showResetButton = true;
   @Input() readonly = false;
   @Input() highlightAi = true;
+  @Input() flatGroups = false;
+  @Input() showPreview = true;
+  @Input() screenshotEnabled = true;
+  
+  get displayGroups(): FieldGroup[] {
+    if (!this.state?.fieldGroups) return [];
+    if (!this.flatGroups) return this.state.fieldGroups;
+    return this.mergeGroupsBySchema(this.state.fieldGroups);
+  }
+  
+  private mergeGroupsBySchema(groups: FieldGroup[]): FieldGroup[] {
+    if (groups.length === 0) return [];
+    const allFields: CanvasFieldState[] = [];
+    let schemaLabel = '';
+    let schemaIcon = '';
+    for (const group of groups) {
+      if (group.isCore && !this.showCoreFields) continue;
+      if (!group.isCore && !this.showSpecialFields) continue;
+      allFields.push(...group.fields);
+      if (!group.isCore && !schemaLabel) {
+        schemaLabel = group.schemaName;
+        schemaIcon = group.icon || '';
+      }
+    }
+    if (allFields.length === 0) return [];
+    return [{
+      id: 'flat-all',
+      label: this.state?.contentTypeLabel || schemaLabel || 'Felder',
+      icon: schemaIcon,
+      schemaName: schemaLabel || 'Core',
+      fields: allFields,
+      isCore: false
+    }];
+  }
   
   // Events
   @Output() userTextChange = new EventEmitter<string>();
@@ -100,6 +143,7 @@ export class DefaultLayoutComponent {
   @Output() submit = new EventEmitter<void>();
   @Output() upload = new EventEmitter<void>();
   @Output() dismissError = new EventEmitter<void>();
+  @Output() screenshotToggle = new EventEmitter<boolean>();
   
   // Track functions
   trackByFieldId(index: number, field: CanvasFieldState): string {
@@ -154,6 +198,16 @@ export class DefaultLayoutComponent {
     }
     
     return flattened;
+  }
+  
+  getVisibleFields(fields: CanvasFieldState[]): CanvasFieldState[] {
+    const flat = this.getFlattenedFields(fields);
+    if (!this.readonly) return flat;
+    return flat.filter(f => {
+      if (f.value === null || f.value === undefined || f.value === '') return false;
+      if (Array.isArray(f.value) && f.value.length === 0) return false;
+      return true;
+    });
   }
   
   onEnterKey(event: Event): void {

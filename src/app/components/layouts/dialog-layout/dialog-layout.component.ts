@@ -16,6 +16,8 @@ import { CanvasState, ContentType, CanvasFieldState, FieldGroup, FieldStatus } f
 import { FieldComponent } from '../../field/field.component';
 import { InputAreaComponent } from '../../shared/input-area/input-area.component';
 import { StatusBarComponent } from '../../shared/status-bar/status-bar.component';
+import { LanguageSwitcherComponent } from '../../language-switcher/language-switcher.component';
+import { PreviewThumbnailComponent } from '../../shared/preview-thumbnail/preview-thumbnail.component';
 
 /**
  * Dialog Layout Component
@@ -39,7 +41,9 @@ import { StatusBarComponent } from '../../shared/status-bar/status-bar.component
     MatTooltipModule,
     FieldComponent,
     InputAreaComponent,
-    StatusBarComponent
+    StatusBarComponent,
+    LanguageSwitcherComponent,
+    PreviewThumbnailComponent
   ],
   templateUrl: './dialog-layout.component.html',
   styleUrls: ['./dialog-layout.component.scss'],
@@ -64,8 +68,46 @@ export class DialogLayoutComponent {
   @Input() showFloatingControls = true;
   @Input() showContentTypeOnly = false;
   @Input() showUploadButton = false;
+  @Input() showSaveButton = true;
+  @Input() showLanguageSwitcher = true;
+  @Input() showContentType = true;
+  @Input() showResetButton = true;
   @Input() readonly = false;
   @Input() highlightAi = true;
+  @Input() flatGroups = false;
+  @Input() showPreview = true;
+  @Input() screenshotEnabled = true;
+
+  get displayGroups(): FieldGroup[] {
+    if (!this.state?.fieldGroups) return [];
+    if (!this.flatGroups) return this.state.fieldGroups;
+    return this.mergeGroupsBySchema(this.state.fieldGroups);
+  }
+
+  private mergeGroupsBySchema(groups: FieldGroup[]): FieldGroup[] {
+    if (groups.length === 0) return [];
+    const allFields: CanvasFieldState[] = [];
+    let schemaLabel = '';
+    let schemaIcon = '';
+    for (const group of groups) {
+      if (group.isCore && !this.showCoreFields) continue;
+      if (!group.isCore && !this.showSpecialFields) continue;
+      allFields.push(...group.fields);
+      if (!group.isCore && !schemaLabel) {
+        schemaLabel = group.schemaName;
+        schemaIcon = group.icon || '';
+      }
+    }
+    if (allFields.length === 0) return [];
+    return [{
+      id: 'flat-all',
+      label: this.state?.contentTypeLabel || schemaLabel || 'Felder',
+      icon: schemaIcon,
+      schemaName: schemaLabel || 'Core',
+      fields: allFields,
+      isCore: false
+    }];
+  }
 
   @Output() userTextChange = new EventEmitter<string>();
   @Output() sourceUrlChange = new EventEmitter<string>();
@@ -79,6 +121,7 @@ export class DialogLayoutComponent {
   @Output() submit = new EventEmitter<void>();
   @Output() upload = new EventEmitter<void>();
   @Output() reset = new EventEmitter<void>();
+  @Output() screenshotToggle = new EventEmitter<boolean>();
 
   trackByFieldId(index: number, field: CanvasFieldState): string {
     return field.fieldId;
@@ -103,6 +146,16 @@ export class DialogLayoutComponent {
       }
     }
     return flattened;
+  }
+
+  getVisibleFields(fields: CanvasFieldState[]): CanvasFieldState[] {
+    const flat = this.getFlattenedFields(fields);
+    if (!this.readonly) return flat;
+    return flat.filter(f => {
+      if (f.value === null || f.value === undefined || f.value === '') return false;
+      if (Array.isArray(f.value) && f.value.length === 0) return false;
+      return true;
+    });
   }
 
   getGroupIcon(group: FieldGroup): string {

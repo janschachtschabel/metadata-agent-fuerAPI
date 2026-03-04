@@ -1,7 +1,7 @@
 <!-- Dialog Layout Template -->
 <!-- Metadata review dialog with grey category bars and floating controls -->
 
-<div class="layout-container layout-dialog" [style.background]="backgroundColor || null">
+<div class="layout-container layout-dialog" [style.background]="backgroundColor || '#ffffff'">
   
   <!-- ===== INPUT AREA (optional) ===== -->
   <app-input-area
@@ -18,7 +18,9 @@
     (startUrlExtraction)="startUrlExtraction.emit($event)"
     (startNodeIdExtraction)="startNodeIdExtraction.emit($event)"
     (inputModeChange)="inputModeChange.emit($event)"
-    (reset)="reset.emit()">
+    (reset)="reset.emit()"
+    [screenshotEnabled]="screenshotEnabled"
+    (screenshotToggle)="screenshotToggle.emit($event)">
   </app-input-area>
 
   <!-- ===== STATUS BAR (optional) ===== -->
@@ -35,11 +37,17 @@
     <span>{{ state!.extractionError }}</span>
   </div>
 
+  <!-- ===== PREVIEW THUMBNAIL ===== -->
+  <app-preview-thumbnail
+    *ngIf="showPreview && state?.previewImageUrl"
+    [imageUrl]="state!.previewImageUrl">
+  </app-preview-thumbnail>
+
   <!-- ===== FIELD GROUPS ===== -->
-  <section class="fields-section" *ngIf="state?.fieldGroups?.length">
-    <ng-container *ngFor="let group of state?.fieldGroups; trackBy: trackByGroupId">
+  <section class="fields-section" *ngIf="displayGroups.length">
+    <ng-container *ngFor="let group of displayGroups; trackBy: trackByGroupId">
       <div class="field-group" 
-           *ngIf="(group.isCore && showCoreFields) || (!group.isCore && showSpecialFields)">
+           *ngIf="(flatGroups || (group.isCore && showCoreFields) || (!group.isCore && showSpecialFields)) && (!readonly || getVisibleFields(group.fields).length > 0)">
         
         <!-- Grey bar — edge-to-edge -->
         <div class="group-header">
@@ -53,7 +61,7 @@
              [class.columns-3]="columns === 3"
              [class.columns-4]="columns === 4">
           <app-field
-            *ngFor="let field of getFlattenedFields(group.fields); trackBy: trackByFieldId"
+            *ngFor="let field of getVisibleFields(group.fields); trackBy: trackByFieldId"
             [field]="field"
             [readonly]="readonly"
             [showActions]="showFieldActions"
@@ -73,7 +81,7 @@
 
   <!-- ===== FLOATING CONTROLS ===== -->
   <div class="floating-controls" *ngIf="showFloatingControls">
-    <div class="floating-content-type">
+    <div class="floating-content-type" *ngIf="showContentType">
       <div class="split-button">
         <div class="split-button-label">
           <mat-icon>{{ state?.contentTypeIcon || 'category' }}</mat-icon>
@@ -108,6 +116,7 @@
       </button>
       <button 
         mat-icon-button
+        *ngIf="showSaveButton"
         [disabled]="!state?.filledFields"
         (click)="submit.emit()"
         [matTooltip]="'CONTROLS.SAVE' | translate">
@@ -115,11 +124,15 @@
       </button>
       <button 
         mat-icon-button
+        *ngIf="showResetButton"
         (click)="reset.emit()"
         [matTooltip]="'CONTROLS.RESET' | translate">
         <mat-icon>refresh</mat-icon>
       </button>
     </div>
+    
+    <!-- Language Switcher -->
+    <app-language-switcher *ngIf="showLanguageSwitcher && !showContentTypeOnly"></app-language-switcher>
   </div>
 
 </div>

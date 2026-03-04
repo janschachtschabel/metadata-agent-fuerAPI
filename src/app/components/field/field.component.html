@@ -1,5 +1,5 @@
 <!-- Only render actual input fields, skip parent containers -->
-<div class="canvas-field" [ngClass]="getStatusClass()" *ngIf="!field.isParent">
+<div class="canvas-field" [ngClass]="getStatusClass()" [class.readonly-mode]="readonly" *ngIf="!field.isParent">
 
   <!-- Radio fields rendered outside mat-form-field (no MatFormFieldControl needed) -->
   <ng-container *ngIf="isRadioField()">

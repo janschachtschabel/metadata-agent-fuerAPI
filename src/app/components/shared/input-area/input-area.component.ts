@@ -14,6 +14,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
 /**
  * Shared Input Area Component
@@ -33,7 +34,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
     MatButtonModule,
     MatButtonToggleModule,
     MatIconModule,
-    MatTooltipModule
+    MatTooltipModule,
+    MatSlideToggleModule
   ],
   templateUrl: './input-area.component.html',
   styleUrls: ['./input-area.component.scss'],
@@ -48,6 +50,8 @@ export class InputAreaComponent {
   @Input() compact = false;
   @Input() showModeSwitcher = true;
   @Input() showPageMode = false;
+  @Input() screenshotEnabled = true;
+  @Input() showScreenshotToggle = true;
 
   @Output() inputModeChange = new EventEmitter<'text' | 'url' | 'nodeId'>();
   @Output() userTextChange = new EventEmitter<string>();
@@ -58,6 +62,7 @@ export class InputAreaComponent {
   @Output() startNodeIdExtraction = new EventEmitter<string>();
   @Output() reset = new EventEmitter<void>();
   @Output() reloadFromPage = new EventEmitter<void>();
+  @Output() screenshotToggle = new EventEmitter<boolean>();
 
   onEnterKey(event: Event): void {
     event.preventDefault();

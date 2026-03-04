@@ -14,46 +14,27 @@ app-default-layout,
 app-plugin-layout,
 app-dialog-layout,
 app-detail-layout,
-app-metadatenpruefdialog-layout,
-app-prueftisch-layout {
+app-clean-layout,
+app-prueftisch-layout,
+app-prueftisch-org-layout {
   display: block;
   width: 100%;
   height: 100%;
 }
 
-// Canvas Container
-.canvas-container {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  background: #f5f7fb;
-  width: 100%;
-  margin: 0;
-  color: #1f2a3d;
-  font-family: 'Inter', 'Roboto', sans-serif;
-  position: relative;
-  
-  &.borderless {
-    height: 100%;
-    padding: 0;
-    background: transparent;
-    
-    .canvas-content {
-      padding: 12px;
-      margin: 0 !important;
-    }
-    
-    .field-group {
-      margin: 0;
-      padding: 0;
-      background: transparent;
-      border: none;
-      border-radius: 0;
-      box-shadow: none;
-      margin-bottom: 16px;
-    }
+// Borderless mode: applied via @HostBinding on canvas component
+// Removes borders and shadows from field groups and input section
+:host.borderless ::ng-deep {
+  .field-group {
+    border: none !important;
+    box-shadow: none !important;
+  }
+  .input-section {
+    border: none !important;
+    box-shadow: none !important;
   }
 }
+
 
 // Input Section
 .input-section {
@@ -63,13 +44,6 @@ app-prueftisch-layout {
   border-radius: 10px;
   margin: 21px 21px 16px;
   box-shadow: none;
-  
-  .borderless & {
-    background: transparent;
-    border: none;
-    margin: 16px 12px;
-    padding: 0;
-  }
   
   .full-width {
     width: 100%;
@@ -193,12 +167,6 @@ app-prueftisch-layout {
   overflow: hidden;
   box-shadow: none;
   
-  .borderless & {
-    background: transparent;
-    border: none;
-    box-shadow: none;
-  }
-  
   .group-header {
     display: flex;
     align-items: center;
@@ -237,6 +205,10 @@ app-prueftisch-layout {
   
   .group-fields {
     padding: 12px 8px;
+
+    .canvas-field:last-child {
+      margin-bottom: 0;
+    }
   }
 }
 

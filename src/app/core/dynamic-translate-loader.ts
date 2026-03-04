@@ -49,15 +49,25 @@ export class DynamicTranslateLoader implements TranslateLoader {
     }
 
     // Local dev (ng serve) or extension page: try local assets immediately
-    const isLocalOrExtension = typeof window !== 'undefined'
+    const isLocal = typeof window !== 'undefined'
       && (window.location.hostname === 'localhost'
-        || window.location.hostname === '127.0.0.1'
-        || window.location.protocol === 'chrome-extension:'
+        || window.location.hostname === '127.0.0.1');
+    const isExtension = typeof window !== 'undefined'
+      && (window.location.protocol === 'chrome-extension:'
         || window.location.protocol === 'moz-extension:');
 
-    if (isLocalOrExtension) {
+    if (isExtension) {
       return this.http.get(`./assets/i18n/${lang}.json`).pipe(
         catchError(() => of({}))
+      );
+    }
+
+    if (isLocal) {
+      // Try origin-based API path first (works when widget is served from subdirectory),
+      // then fall back to local ./assets/i18n/ (works with ng serve)
+      const origin = window.location.origin;
+      return this.http.get(`${origin}/widget/i18n/${lang}.json`).pipe(
+        catchError(() => localFallback())
       );
     }
 

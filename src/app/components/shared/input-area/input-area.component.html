@@ -127,5 +127,17 @@
       <mat-icon>captive_portal</mat-icon>
       {{ 'INPUT.MODE_PAGE' | translate }}
     </button>
+
+    <!-- Screenshot Toggle -->
+    <div class="screenshot-toggle" *ngIf="showScreenshotToggle">
+      <mat-slide-toggle
+        [checked]="screenshotEnabled"
+        (change)="screenshotToggle.emit($event.checked)"
+        [disabled]="isExtracting"
+        color="primary">
+        <mat-icon class="toggle-icon">photo_camera</mat-icon>
+        <span class="toggle-label">{{ 'SCREENSHOT.TOGGLE' | translate }}</span>
+      </mat-slide-toggle>
+    </div>
   </div>
 </section>

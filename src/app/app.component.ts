@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { CanvasComponent } from './components/canvas/canvas.component';
 
 /**
@@ -9,8 +10,20 @@ import { CanvasComponent } from './components/canvas/canvas.component';
  *   ?viewerMode=true     - Backward compat, maps to readonly=true
  *   ?readonly=true       - Enable readonly mode
  *   ?borderless=true     - Enable borderless mode
+ *   ?flatGroups=true     - Merge field groups into one per schema
  *   ?showStatusBar=true  - Show status bar
  *   ?controls=true       - Show floating controls
+ *   ?showContentType=false - Hide content type button
+ *   ?showSaveButton=false  - Hide save button
+ *   ?showUploadButton=true - Show upload button
+ *   ?showJsonLoader=false  - Hide JSON loader
+ *   ?showLanguageSwitcher=false - Hide language switcher
+ *   ?showResetButton=false - Hide reset button
+ *   ?showContentTypeOnly=true - Only show content type
+ *   ?dataUrl=assets/example-event.json - Load JSON data from URL
+ * 
+ * Layout values: default, plugin, dialog, detail, clean, prueftisch, prueftisch-org
+ * (alias: metadatenpruefdialog → clean)
  */
 @Component({
   selector: 'app-root',
@@ -28,8 +41,17 @@ import { CanvasComponent } from './components/canvas/canvas.component';
       [borderless]="borderless"
       [showStatusBar]="showStatusBar"
       [controls]="controls"
+      [showContentType]="showContentType"
+      [showSaveButton]="showSaveButton"
+      [showUploadButton]="showUploadButton"
+      [showJsonLoader]="showJsonLoader"
+      [showLanguageSwitcher]="showLanguageSwitcher"
+      [showResetButton]="showResetButton"
+      [showContentTypeOnly]="showContentTypeOnly"
       [inputMode]="inputMode"
-      [highlightAi]="highlightAi">
+      [highlightAi]="highlightAi"
+      [flatGroups]="flatGroups"
+      [metadataInput]="metadataInput">
     </app-canvas>
   `,
   styles: [`
@@ -44,6 +66,7 @@ export class AppComponent implements OnInit {
   contextName = 'default';
   schemaVersion = 'latest';
   layout = 'default';
+  metadataInput: Record<string, unknown> | null = null;
   viewerMode: boolean | undefined = undefined;
   readonly: boolean | undefined = undefined;
   borderless: boolean | undefined = undefined;
@@ -52,7 +75,17 @@ export class AppComponent implements OnInit {
   columns: number | undefined = undefined;
   inputMode: 'text' | 'url' | 'nodeId' = 'text';
   highlightAi: boolean | undefined = undefined;
+  showContentType: boolean | undefined = undefined;
+  showSaveButton: boolean | undefined = undefined;
+  showUploadButton: boolean | undefined = undefined;
+  showJsonLoader: boolean | undefined = undefined;
+  showLanguageSwitcher: boolean | undefined = undefined;
+  showResetButton: boolean | undefined = undefined;
+  showContentTypeOnly: boolean | undefined = undefined;
+  flatGroups: boolean | undefined = undefined;
   
+  constructor(private http: HttpClient) {}
+
   ngOnInit(): void {
     this.parseQueryParams();
   }
@@ -93,6 +126,11 @@ export class AppComponent implements OnInit {
       this.borderless = params.get('borderless') === 'true';
     }
     
+    // Flat Groups
+    if (params.has('flatGroups')) {
+      this.flatGroups = params.get('flatGroups') === 'true';
+    }
+    
     // Status Bar
     if (params.has('showStatusBar')) {
       this.showStatusBar = params.get('showStatusBar') === 'true';
@@ -121,7 +159,29 @@ export class AppComponent implements OnInit {
       this.highlightAi = params.get('highlightAi') !== 'false';
     }
     
-    console.log('📋 App Config from URL:', {
+    // Floating control buttons
+    const boolParam = (name: string) => params.has(name) ? params.get(name) === 'true' : undefined;
+    this.showContentType = boolParam('showContentType');
+    this.showSaveButton = boolParam('showSaveButton');
+    this.showUploadButton = boolParam('showUploadButton');
+    this.showJsonLoader = boolParam('showJsonLoader');
+    this.showLanguageSwitcher = boolParam('showLanguageSwitcher');
+    this.showResetButton = boolParam('showResetButton');
+    this.showContentTypeOnly = boolParam('showContentTypeOnly');
+    
+    // Load JSON data from URL
+    const dataUrl = params.get('dataUrl');
+    if (dataUrl) {
+      this.http.get<Record<string, unknown>>(dataUrl).subscribe({
+        next: (data) => {
+          console.log('� Loaded data from:', dataUrl);
+          this.metadataInput = data;
+        },
+        error: (err) => console.error('Failed to load dataUrl:', dataUrl, err)
+      });
+    }
+    
+    console.log('�📋 App Config from URL:', {
       apiUrl: this.apiUrl || '(environment default)',
       context: this.contextName,
       version: this.schemaVersion,
@@ -129,8 +189,10 @@ export class AppComponent implements OnInit {
       viewerMode: this.viewerMode,
       readonly: this.readonly,
       borderless: this.borderless,
+      flatGroups: this.flatGroups,
       showStatusBar: this.showStatusBar,
-      controls: this.controls
+      controls: this.controls,
+      dataUrl: dataUrl || '(none)'
     });
   }
 }

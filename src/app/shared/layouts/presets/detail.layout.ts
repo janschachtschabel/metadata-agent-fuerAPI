@@ -50,7 +50,8 @@ export const DETAIL_LAYOUT: LayoutConfig = {
     jsonLoader: false,
     saveButton: false,
     uploadButton: false,
-    languageSwitcher: false
+    floatingResetButton: true,
+    languageSwitcher: true
   },
   style: {
     borderless: true,

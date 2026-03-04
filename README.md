@@ -104,11 +104,13 @@ Die Webkomponente nutzt **Roboto** als Textschrift sowie **Material Icons** (fil
 ```html
 <metadata-agent-canvas
   api-url="https://metadata-agent-api.vercel.app"
-  layout="metadatenpruefdialog"
+  layout="clean"
   context-name="mds_oeh"
   schema-version="1.8.0">
 </metadata-agent-canvas>
 ```
+
+> **Hinweis:** `metadatenpruefdialog` ist weiterhin als Alias fuer `clean` nutzbar.
 
 ### Programmatischer Zugriff (JavaScript)
 
@@ -178,19 +180,23 @@ Zeile mit Inhaltstyp-Auswahl, Feld-Statistik und Fortschrittsbalken.
 
 ### Floating Controls (`showFloatingControls`)
 
-Schwebende Aktionsbuttons am unteren Rand, inkl. Content-Type-Wahl.
+Schwebende Aktionsbuttons am unteren Rand. Master-Toggle fuer die gesamte Floating Bar.
+Jedes Element ist einzeln steuerbar ueber eigene Parameter:
 
 ```html
 <metadata-agent-canvas show-floating-controls="true"></metadata-agent-canvas>
 ```
 
-**Enthaltene Elemente (je nach Layout):**
-- Content-Type-Selektor (immer sichtbar wenn Controls an)
+**Modular steuerbare Elemente:**
+- Content-Type-Selektor (`showContentType`) - Split-Button zur Inhaltstyp-Wahl
 - Upload-Button (`showUploadButton`) - Upload ins Repository via API
-- Save/Submit-Button - Metadaten speichern
-- Reset-Button - Zuruecksetzen
+- Save/Submit-Button (`showSaveButton`) - Metadaten speichern / ans Plugin senden
+- Reset-Button (`showResetButton`) - Zuruecksetzen
 - JSON-Loader (`showJsonLoader`) - JSON-Datei importieren
-- Sprachumschalter (`showLanguageSwitcher`)
+- Sprachumschalter (`showLanguageSwitcher`) - i18n Sprachwechsel-Pill
+
+**Defaults:** Content-Type, Language Switcher und Reset sind standardmaessig in allen Layouts aktiv.
+Upload, Save und JSON-Loader nur in Layouts, die sie bisher nutzten (s. Matrix).
 
 ### Upload-Button (`showUploadButton`)
 
@@ -208,6 +214,30 @@ Button zum Hochladen der Metadaten ins WLO Repository (via FastAPI-Backend).
 - **Default/Dialog Layout:** Ruft `POST /upload` auf der FastAPI-API auf
 - **Plugin Layout:** Sendet JSON per `postMessage` zurueck an die Browser-Extension
 
+### Flat Groups (`flatGroups`)
+
+Fasst alle Feldgruppen eines Schemas zu **einer einzigen Gruppe** zusammen.
+Die Ueberschrift wird der Schema-Name (z.B. "Veranstaltung" statt einzelner Gruppen wie "Veranstaltungsdetails", "Ort", "Organisation").
+
+```html
+<!-- Flat Groups aktivieren -->
+<metadata-agent-canvas flat-groups="true"></metadata-agent-canvas>
+
+<!-- Per JavaScript -->
+<script>
+  document.querySelector('metadata-agent-canvas').flatGroups = true;
+</script>
+
+<!-- Per URL-Parameter (Standalone) -->
+<!-- http://localhost:4200/?flatGroups=true -->
+```
+
+**Verhalten:**
+- Standard: `false` (normale Gruppierung nach Schema-Gruppen)
+- Bei `true`: Alle Felder eines Schemas werden in einer Gruppe angezeigt
+- Respektiert `showCoreFields` und `showSpecialFields` — wenn Core-Felder ausgeblendet sind, werden sie auch in Flat Groups nicht angezeigt
+- Funktioniert in allen 7 Layouts
+
 ### Felder
 
 ```html
@@ -220,6 +250,37 @@ Button zum Hochladen der Metadaten ins WLO Repository (via FastAPI-Backend).
 <!-- Feld-Aktionen (Info-Icon, Status) ein/aus -->
 <metadata-agent-canvas show-field-actions="false"></metadata-agent-canvas>
 ```
+
+### Vorschaubild (`showPreview`)
+
+Zeigt ein Vorschaubild (Screenshot/Thumbnail) oberhalb der Feldgruppen an. Standardmaessig aktiviert.
+
+```html
+<!-- Vorschaubild deaktivieren -->
+<metadata-agent-canvas show-preview="false"></metadata-agent-canvas>
+
+<!-- Vorschaubild aktivieren (Standard) -->
+<metadata-agent-canvas show-preview="true"></metadata-agent-canvas>
+```
+
+### Screenshot-Erzeugung (`enableScreenshot`, `screenshotMethod`)
+
+Steuert die automatische Screenshot-Erzeugung bei URL-Extraktion. Ein Toggle-Schalter im Eingabebereich erlaubt Nutzern, Screenshots zur Laufzeit ein-/auszuschalten.
+
+```html
+<!-- Screenshots deaktivieren -->
+<metadata-agent-canvas enable-screenshot="false"></metadata-agent-canvas>
+
+<!-- Screenshots mit Playwright-Methode (statt Standard pageshot) -->
+<metadata-agent-canvas enable-screenshot="true" screenshot-method="playwright"></metadata-agent-canvas>
+```
+
+**Verhalten:**
+- Bei URL-Extraktion wird parallel ein Screenshot erfasst und als Vorschaubild angezeigt
+- Bei Text-Extraktion: Wenn in den generierten Metadaten eine URL gefunden wird (`ccm:wwwurl`), wird nachtraeglich ein Screenshot erstellt
+- Der Toggle-Schalter ist in allen Layouts mit Eingabebereich verfuegbar
+- `pageshot` (Standard): Externer Screenshot-Service
+- `playwright`: Server-seitiger Browser-Screenshot (datenschutzfreundlich)
 
 ### Footer (`showFooter`)
 
@@ -254,6 +315,7 @@ Fusszeile mit Feld-Statistik und Aktions-Buttons (nur im Default-Layout).
 | `background-color` | `backgroundColor` | string | `''` | CSS-Hintergrundfarbe |
 | `input-mode` | `inputMode` | string | `'text'` | `'text'`, `'url'`, `'nodeId'` |
 | `highlight-ai` | `highlightAi` | boolean | `true` | KI-Felder violett hervorheben |
+| `flat-groups` | `flatGroups` | boolean | `false` | Feldgruppen pro Schema zusammenfassen |
 | `viewer-mode` | `viewerMode` | boolean | `false` | Legacy: setzt `readonly=true` |
 
 #### Element-Sichtbarkeit
@@ -266,9 +328,25 @@ Fusszeile mit Feld-Statistik und Aktions-Buttons (nur im Default-Layout).
 | `show-special-fields` | `showSpecialFields` | `true` | Content-Type-spezifische Felder |
 | `show-field-actions` | `showFieldActions` | s. Matrix | Feld-Status-Icons und Info-Buttons |
 | `show-footer` | `showFooter` | s. Matrix | Footer mit Statistik und Buttons |
-| `show-floating-controls` | `showFloatingControls` | s. Matrix | Schwebende Aktionsbuttons |
+| `show-floating-controls` | `showFloatingControls` | s. Matrix | Master-Toggle: Schwebende Aktionsbuttons |
+| `show-content-type` | `showContentType` | `true` | Content-Type Split-Button in Floating Bar |
 | `show-upload-button` | `showUploadButton` | s. Matrix | Upload-Button (Repository) |
+| `show-save-button` | `showSaveButton` | s. Matrix | Save/Submit-Button in Floating Bar |
+| `show-json-loader` | `showJsonLoader` | s. Matrix | JSON-Datei-Loader in Floating Bar |
+| `show-language-switcher` | `showLanguageSwitcher` | `true` | i18n Sprachwechsel in Floating Bar |
+| `show-reset-button` | `showResetButton` | `true` | Reset-Button in Floating Bar |
 | `show-content-type-only` | `showContentTypeOnly` | `false` | Nur Content-Type anzeigen |
+| `show-preview` | `showPreview` | `true` | Vorschaubild im Canvas anzeigen |
+| `flat-groups` | `flatGroups` | `false` | Feldgruppen pro Schema zusammenfassen |
+
+#### Vorschaubild & Screenshot
+
+| HTML-Attribut | Angular Input | Typ | Default | Beschreibung |
+|---------------|---------------|-----|---------|--------------|
+| `show-preview` | `showPreview` | boolean | `true` | Vorschaubild-Anzeige ein/ausschalten |
+| `enable-screenshot` | `enableScreenshot` | boolean | `true` | Automatische Screenshot-Erzeugung bei URL-Extraktion |
+| `screenshot-method` | `screenshotMethod` | string | `'pageshot'` | Screenshot-Methode: `'pageshot'` oder `'playwright'` |
+| `preview-image` | `previewImage` | string | - | Vorschaubild direkt als Base64 Data-URL setzen |
 
 #### Daten
 
@@ -289,29 +367,37 @@ Fusszeile mit Feld-Statistik und Aktions-Buttons (nur im Default-Layout).
 | `plugin` | 1 | Browser-Extension (kompakte Sidebar) |
 | `dialog` | 1 | Redaktionsdialog (Modal), Metadaten-Review |
 | `detail` | 4 | Detail-Ansicht, Preview, Druck (Read-Only) |
-| `metadatenpruefdialog` | 1 | edu-sharing Metadaten-Qualitaetspruefung |
-| `prueftisch` | 1 | edu-sharing Prueftisch (1-spaltig) |
-| `prueftisch-gross` | 2 | edu-sharing Prueftisch gross (2-spaltig) |
+| `clean` | 1 | Minimale rahmenlose Ansicht fuer Einbettung/Review (ehem. `metadatenpruefdialog`) |
+| `prueftisch` | 1 | edu-sharing Prueftisch (columns=2 fuer breit) |
+| `prueftisch-org` | 1 | edu-sharing organisatorischer Prueftisch, readonly (columns=2 fuer breit) |
 
 ### Element-Defaults pro Layout (Matrix)
 
 `true` = standardmaessig sichtbar, `false` = standardmaessig ausgeblendet.
 Jeder Wert kann per Attribut ueberschrieben werden.
 
-| Element | `default` | `plugin` | `dialog` | `detail` | `pruefdialog` | `prueftisch` | `prueftisch-gross` |
-|---------|-----------|----------|----------|----------|---------------|--------------|-------------------|
+| Element | `default` | `plugin` | `dialog` | `detail` | `clean` | `prueftisch` | `prueftisch-org` |
+|---------|-----------|----------|----------|----------|---------|--------------|------------------|
 | **inputArea** | true | true | false | false | false | false | false |
 | **statusBar** | true | true | false | false | false | false | false |
 | **coreFields** | true | true | true | true | true | true | true |
 | **specialFields** | true | true | true | true | true | true | true |
-| **fieldActions** | true | true | true | false | true | true | true |
+| **fieldActions** | true | true | true | false | true | true | false |
 | **footer** | true | false | false | false | false | false | false |
 | **floatingControls** | true | true | true | true | true | true | true |
+| **contentType** | true | true | true | true | true | true | true |
 | **uploadButton** | true | true | false | false | false | false | false |
-| **readonly** | false | false | false | **true** | false | false | false |
-| **columns** | 1 | 1 | 1 | 4 | 1 | 1 | 2 |
+| **saveButton** | true | true | true | false | false | false | false |
+| **jsonLoader** | true | false | false | false | false | false | false |
+| **languageSwitcher** | true | true | true | true | true | true | true |
+| **resetButton** | true | true | true | true | true | true | true |
+| **readonly** | false | false | false | **true** | false | false | **true** |
+| **columns** | 1 | 1 | 1 | 4 | 1 | 1 | 1 |
 | **borderless** | false | true | true | true | true | true | true |
+| **flatGroups** | false | false | false | false | false | false | false |
 | **compact** | false | true | true | false | true | false | false |
+
+**Hinweis:** Mehrspaltige Ansichten per `columns=2` (oder 3/4) Attribut auf jedem Layout moeglich.
 
 ### Layout-Aliase
 
@@ -322,9 +408,11 @@ Jeder Wert kann per Attribut ueberschrieben werden.
 | `modal`, `review`, `redaktion` | `dialog` |
 | `preview`, `print` | `detail` |
 | `webcomponent`, `embed`, `embedded`, `viewer`, `view`, `readonly` | `default` |
-| `pruefung`, `validation`, `check` | `metadatenpruefdialog` |
+| `metadatenpruefdialog`, `pruefung`, `validation`, `check` | `clean` |
 | `reviewtable`, `table`, `qa` | `prueftisch` |
-| `prueftisch-large`, `reviewtable-large`, `qa-large` | `prueftisch-gross` |
+| `prueftisch-large`, `prueftisch-gross`, `reviewtable-large`, `qa-large` | `prueftisch` |
+| `prueftisch-org`, `reviewtable-org`, `qa-org` | `prueftisch-org` |
+| `prueftisch-org-large`, `reviewtable-org-large`, `qa-org-large` | `prueftisch-org` |
 
 ---
 
@@ -395,6 +483,16 @@ Jeder Wert kann per Attribut ueberschrieben werden.
 </metadata-agent-canvas>
 ```
 
+### Prueftisch Org (organisatorischer Prueftisch, readonly)
+
+```html
+<metadata-agent-canvas
+  api-url="https://metadata-agent-api.vercel.app"
+  layout="prueftisch-org"
+  content-type="event.json">
+</metadata-agent-canvas>
+```
+
 ### Inhaltstyp von aussen steuern
 
 ```html
@@ -451,6 +549,24 @@ canvas.addEventListener('uploadResult', (e) => {
 
 ---
 
+## Extended Metadata Fields
+
+Beim Upload ins Repository werden automatisch drei zusaetzliche Felder geschrieben (steuerbar via API-Parameter `write_extended_data`, Standard: aktiv):
+
+| Feld | Inhalt | Quelle |
+|------|--------|--------|
+| `ccm:oeh_extendedType` | URI des Inhaltstyps | Vocabulary-URI aus `core.json` (z.B. `http://w3id.org/openeduhub/vocabs/contentTypes/event`) |
+| `ccm:oeh_extendedData` | Vollstaendiges Metadaten-JSON | Alle Metadaten-Felder als JSON-String |
+| `ccm:oeh_extendedText` | Rohtext vor Extraktion | `userText` aus dem Eingabefeld (Text, extrahierter Seiteninhalt bei URL, etc.) |
+
+### Datenfluss
+
+- **Standalone/Bookmarklet:** Die Webkomponente sendet `write_extended_data: true` und `extended_text` (aus `state.userText`) direkt an die API `/upload`
+- **Browser-Extension:** Die Webkomponente exportiert `_source_text` im `metadataSubmit`-Event. Das Plugin extrahiert diesen Wert und reicht ihn als `extended_text` an die API weiter
+- **Harvester:** Die API fuegt `_source_text` in die `/generate`-Response ein. Der Harvester extrahiert ihn und sendet ihn als `extended_text` an `/upload`
+
+---
+
 ## URL Query Parameter (Standalone-Modus)
 
 Im Browser koennen alle Optionen per URL gesetzt werden:
@@ -472,13 +588,19 @@ http://localhost:4200/?layout=dialog&showInputArea=true&showStatusBar=true&input
 | `showInputArea` | Texteingabefeld anzeigen |
 | `showStatusBar` | Statusleiste anzeigen |
 | `showUploadButton` | Upload-Button anzeigen |
-| `showFloatingControls` / `controls` | Schwebende Buttons |
+| `showFloatingControls` / `controls` | Schwebende Buttons (Master-Toggle) |
+| `showContentType` | Content-Type Split-Button |
+| `showSaveButton` | Save/Submit-Button |
+| `showJsonLoader` | JSON-Datei-Loader |
+| `showLanguageSwitcher` | Sprachwechsel-Pill |
+| `showResetButton` | Reset-Button |
 | `showCoreFields` | Kernfelder |
 | `showSpecialFields` | Spezialfelder |
 | `showFooter` | Footer |
 | `showFieldActions` | Feld-Aktionen |
 | `showContentTypeOnly` | Nur Content-Type |
 | `highlightAi` | KI-Felder violett hervorheben |
+| `flatGroups` | Feldgruppen pro Schema zusammenfassen |
 
 ---
 
@@ -573,7 +695,8 @@ src/app/
 │   │   ├── dialog-layout/             # Redaktionsdialog
 │   │   ├── detail-layout/             # Detail/Preview (multi-column)
 │   │   ├── metadatenpruefdialog-layout/
-│   │   ├── prueftisch-layout/         # Prueftisch + Prueftisch-Gross
+│   │   ├── prueftisch-layout/         # Prueftisch
+│   │   ├── prueftisch-org-layout/     # Prueftisch Org (organisational)
 │   │   └── _shared-layout-styles.scss # Gemeinsame SCSS Mixins
 │   ├── json-loader/                   # JSON Import
 │   └── language-switcher/             # Sprachumschalter (DE/EN)

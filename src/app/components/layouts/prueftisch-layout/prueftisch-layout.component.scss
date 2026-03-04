@@ -59,6 +59,10 @@
   }
   .group-fields {
     padding: 20px 16px 16px;
+
+    ::ng-deep app-field:last-child .canvas-field {
+      margin-bottom: 0;
+    }
   }
 }
 
@@ -76,6 +80,10 @@
   }
   .group-fields {
     padding: 20px 16px 16px;
+
+    ::ng-deep app-field:last-child .canvas-field {
+      margin-bottom: 0;
+    }
   }
 }
 

@@ -121,6 +121,18 @@
         <mat-icon>refresh</mat-icon>
         {{ 'INPUT.RESET' | translate }}
       </button>
+
+      <!-- Screenshot Toggle -->
+      <div class="screenshot-toggle" *ngIf="!readonly">
+        <mat-slide-toggle
+          [checked]="screenshotEnabled"
+          (change)="screenshotToggle.emit($event.checked)"
+          [disabled]="state?.isExtracting ?? false"
+          color="primary">
+          <mat-icon class="toggle-icon">photo_camera</mat-icon>
+          <span class="toggle-label">{{ 'SCREENSHOT.TOGGLE' | translate }}</span>
+        </mat-slide-toggle>
+      </div>
     </div>
   </section>
 
@@ -186,11 +198,17 @@
     </div>
   </section>
 
+  <!-- ===== PREVIEW THUMBNAIL ===== -->
+  <app-preview-thumbnail
+    *ngIf="showPreview && state?.previewImageUrl"
+    [imageUrl]="state!.previewImageUrl">
+  </app-preview-thumbnail>
+
   <!-- ===== FIELD GROUPS ===== -->
-  <section class="fields-section" *ngIf="state?.fieldGroups?.length">
-    <ng-container *ngFor="let group of state?.fieldGroups; trackBy: trackByGroupId">
+  <section class="fields-section" *ngIf="displayGroups.length">
+    <ng-container *ngFor="let group of displayGroups; trackBy: trackByGroupId">
       <div class="field-group" 
-           *ngIf="(group.isCore && showCoreFields) || (!group.isCore && showSpecialFields)">
+           *ngIf="(flatGroups || (group.isCore && showCoreFields) || (!group.isCore && showSpecialFields)) && (!readonly || getVisibleFields(group.fields).length > 0)">
         
         <!-- Group Header -->
         <div class="group-header" (click)="group.collapsed = !group.collapsed">
@@ -213,7 +231,7 @@
              [class.columns-4]="columns === 4"
              *ngIf="!group.collapsed">
           <app-field
-            *ngFor="let field of getFlattenedFields(group.fields); trackBy: trackByFieldId"
+            *ngFor="let field of getVisibleFields(group.fields); trackBy: trackByFieldId"
             [field]="field"
             [readonly]="readonly"
             [showActions]="showFieldActions"
@@ -237,7 +255,7 @@
   <!-- ===== FLOATING CONTROLS ===== -->
   <div class="floating-controls" *ngIf="showFloatingControls">
     <!-- Content Type (when fields exist) -->
-    <div class="floating-content-type" *ngIf="state?.totalFields">
+    <div class="floating-content-type" *ngIf="showContentType && state?.totalFields">
       <div class="split-button">
         <div class="split-button-label">
           <mat-icon>{{ state?.contentTypeIcon || 'category' }}</mat-icon>
@@ -264,10 +282,11 @@
     
     <!-- Action Buttons (hidden when showContentTypeOnly is true) -->
     <div class="action-buttons" *ngIf="!showContentTypeOnly">
-      <app-json-loader (jsonLoaded)="jsonLoaded.emit($event)"></app-json-loader>
+      <app-json-loader *ngIf="showJsonLoader" (jsonLoaded)="jsonLoaded.emit($event)"></app-json-loader>
       
       <button 
         mat-icon-button
+        *ngIf="showSaveButton"
         [disabled]="!state?.filledFields"
         (click)="downloadJson.emit()"
         [matTooltip]="'CONTROLS.SAVE_JSON' | translate">
@@ -286,6 +305,7 @@
       
       <button 
         mat-icon-button
+        *ngIf="showResetButton"
         (click)="reset.emit()"
         [matTooltip]="'CONTROLS.RESET' | translate">
         <mat-icon>refresh</mat-icon>
@@ -293,7 +313,7 @@
     </div>
     
     <!-- Language Switcher (separate floating pill) -->
-    <app-language-switcher *ngIf="!showContentTypeOnly"></app-language-switcher>
+    <app-language-switcher *ngIf="showLanguageSwitcher && !showContentTypeOnly"></app-language-switcher>
   </div>
 
 </div>

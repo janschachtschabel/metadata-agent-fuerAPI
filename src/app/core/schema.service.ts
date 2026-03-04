@@ -152,7 +152,7 @@ export class SchemaService {
 
   async getContentTypes(): Promise<ContentType[]> {
     const core = await this.loadCoreSchema();
-    const field = core.fields.find(f => f.id === 'ccm:oeh_flex_lrt');
+    const field = core.fields.find(f => f.id === 'ccm:oeh_extendedType');
     
     if (!field?.system?.vocabulary?.concepts) {
       return [];
@@ -163,6 +163,7 @@ export class SchemaService {
     return field.system.vocabulary.concepts.map(concept => ({
       label: this.localize(concept.label, lang),
       schemaFile: concept.schema_file || '',
+      uri: concept.uri || undefined,
       icon: concept.icon || 'category'
     }));
   }
@@ -173,7 +174,7 @@ export class SchemaService {
     
     if (!this.coreSchema) return undefined;
     
-    const field = this.coreSchema.fields.find(f => f.id === 'ccm:oeh_flex_lrt');
+    const field = this.coreSchema.fields.find(f => f.id === 'ccm:oeh_extendedType');
     const concept = field?.system?.vocabulary?.concepts?.find(c => c.schema_file === schemaFile);
     
     if (!concept) return undefined;
@@ -181,8 +182,42 @@ export class SchemaService {
     return {
       label: this.localize(concept.label, this.i18n.currentLang),
       schemaFile: concept.schema_file || '',
+      uri: concept.uri || undefined,
       icon: concept.icon || 'category'
     };
+  }
+
+  async getContentTypeByUri(uri: string): Promise<ContentType | undefined> {
+    await this.loadCoreSchema();
+    
+    if (!this.coreSchema) return undefined;
+    
+    const field = this.coreSchema.fields.find(f => f.id === 'ccm:oeh_extendedType');
+    const concept = field?.system?.vocabulary?.concepts?.find(c => c.uri === uri);
+    
+    if (!concept) return undefined;
+    
+    return {
+      label: this.localize(concept.label, this.i18n.currentLang),
+      schemaFile: concept.schema_file || '',
+      uri: concept.uri || undefined,
+      icon: concept.icon || 'category'
+    };
+  }
+
+  /**
+   * Resolve a vocab URI or schema filename to a schema filename.
+   * Accepts both 'event.json' and 'http://w3id.org/openeduhub/vocabs/contentTypes/event'.
+   */
+  resolveSchemaFileOrUri(schemaFileOrUri: string): string {
+    if (!schemaFileOrUri.startsWith('http://') && !schemaFileOrUri.startsWith('https://')) {
+      return schemaFileOrUri;
+    }
+    // Resolve URI to schema_file
+    if (!this.coreSchema) return schemaFileOrUri;
+    const field = this.coreSchema.fields.find(f => f.id === 'ccm:oeh_extendedType');
+    const concept = field?.system?.vocabulary?.concepts?.find(c => c.uri === schemaFileOrUri);
+    return concept?.schema_file || schemaFileOrUri;
   }
 
   // ===== Localization =====
@@ -303,7 +338,7 @@ export class SchemaService {
 
   getContentTypeConcepts(): any[] {
     if (!this.coreSchema) return [];
-    const field = this.coreSchema.fields.find(f => f.id === 'ccm:oeh_flex_lrt');
+    const field = this.coreSchema.fields.find(f => f.id === 'ccm:oeh_extendedType');
     if (!field?.system?.vocabulary?.concepts) return [];
     
     const lang = this.i18n.currentLang;

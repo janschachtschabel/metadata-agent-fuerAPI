@@ -144,6 +144,7 @@ export interface FieldGroup {
 export interface ContentType {
   label: string;
   schemaFile: string;
+  uri?: string;
   icon?: string;
   description?: string;
 }
@@ -166,6 +167,9 @@ export interface CanvasState {
   totalFields: number;
   filledFields: number;
   metadata: Record<string, any>;
+  previewImageUrl?: string;
+  screenshotEnabled: boolean;
+  screenshotMethod: 'pageshot' | 'playwright';
 }
 
 // ===== Extraction Types =====
@@ -218,6 +222,8 @@ export function createInitialState(): CanvasState {
     extractionError: null,
     totalFields: 0,
     filledFields: 0,
-    metadata: {}
+    metadata: {},
+    screenshotEnabled: true,
+    screenshotMethod: 'pageshot'
   };
 }

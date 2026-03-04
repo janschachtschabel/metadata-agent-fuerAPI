@@ -10,7 +10,8 @@ import {
   ChangeDetectionStrategy, 
   ChangeDetectorRef,
   NgZone,
-  HostListener
+  HostListener,
+  HostBinding
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subject, takeUntil } from 'rxjs';
@@ -28,8 +29,9 @@ import { DefaultLayoutComponent } from '../layouts/default-layout/default-layout
 import { PluginLayoutComponent } from '../layouts/plugin-layout/plugin-layout.component';
 import { DialogLayoutComponent } from '../layouts/dialog-layout/dialog-layout.component';
 import { DetailLayoutComponent } from '../layouts/detail-layout/detail-layout.component';
-import { MetadatenpruefdialogLayoutComponent } from '../layouts/metadatenpruefdialog-layout/metadatenpruefdialog-layout.component';
+import { CleanLayoutComponent } from '../layouts/clean-layout/clean-layout.component';
 import { PrueftischLayoutComponent } from '../layouts/prueftisch-layout/prueftisch-layout.component';
+import { PrueftischOrgLayoutComponent } from '../layouts/prueftisch-org-layout/prueftisch-org-layout.component';
 
 /**
  * Canvas Component - Orchestrator
@@ -50,8 +52,9 @@ import { PrueftischLayoutComponent } from '../layouts/prueftisch-layout/prueftis
     PluginLayoutComponent,
     DialogLayoutComponent,
     DetailLayoutComponent,
-    MetadatenpruefdialogLayoutComponent,
-    PrueftischLayoutComponent
+    CleanLayoutComponent,
+    PrueftischLayoutComponent,
+    PrueftischOrgLayoutComponent
   ],
   templateUrl: './canvas.component.html',
   styleUrls: ['./canvas.component.scss'],
@@ -60,6 +63,10 @@ import { PrueftischLayoutComponent } from '../layouts/prueftisch-layout/prueftis
 export class CanvasComponent implements OnInit, OnDestroy, OnChanges {
   /** Readable widget version (accessible via element.version) */
   readonly version = WIDGET_VERSION;
+
+  @HostBinding('class.borderless') get isBorderless(): boolean {
+    return this._borderless === true || (this._borderless === undefined && this._layout.style.borderless);
+  }
 
   // ===== INPUT PROPERTIES =====
   
@@ -94,6 +101,11 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges {
   @Input() set borderless(value: boolean | string | undefined) {
     if (value === undefined || value === null) return;
     this._borderless = value === true || value === 'true';
+  }
+  
+  @Input() set flatGroups(value: boolean | string | undefined) {
+    if (value === undefined || value === null) return;
+    this._flatGroups = value === true || value === 'true';
   }
   
   @Input() backgroundColor = '';
@@ -147,12 +159,38 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges {
     this._showUploadButton = value === undefined ? undefined : (value === true || value === 'true');
   }
   
+  @Input() set showSaveButton(value: boolean | string | undefined) {
+    this._showSaveButton = value === undefined ? undefined : (value === true || value === 'true');
+  }
+  
+  @Input() set showJsonLoader(value: boolean | string | undefined) {
+    this._showJsonLoader = value === undefined ? undefined : (value === true || value === 'true');
+  }
+  
+  @Input() set showLanguageSwitcher(value: boolean | string | undefined) {
+    this._showLanguageSwitcher = value === undefined ? undefined : (value === true || value === 'true');
+  }
+  
+  @Input() set showContentType(value: boolean | string | undefined) {
+    this._showContentType = value === undefined ? undefined : (value === true || value === 'true');
+  }
+  
+  @Input() set showResetButton(value: boolean | string | undefined) {
+    this._showResetButton = value === undefined ? undefined : (value === true || value === 'true');
+  }
+  
+  @Input() set showPreview(value: boolean | string | undefined) {
+    if (value === undefined || value === null) return;
+    this._showPreview = value !== false && value !== 'false';
+  }
+
   @Input() set showPageMode(value: boolean | string | undefined) {
     this._showPageMode = value === true || value === 'true';
   }
   
   // OEH compatibility: Show only content type selector in floating controls
-  @Input() set showContentTypeOnly(value: boolean | string) {
+  @Input() set showContentTypeOnly(value: boolean | string | undefined) {
+    if (value === undefined) return;
     this._showContentTypeOnly = value === true || value === 'true';
   }
   
@@ -164,6 +202,31 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges {
   
   @Input() metadataInput: Record<string, unknown> | null = null;
   
+  @Input() set previewImage(value: string | undefined) {
+    if (value !== undefined && value !== null) {
+      this._previewImageUrl = value;
+      // Also update state so layouts can access it
+      if (this.state) {
+        this.state = { ...this.state, previewImageUrl: value };
+      }
+    }
+  }
+  
+  // Screenshot: enable/disable and method configuration
+  @Input() set enableScreenshot(value: boolean | string | undefined) {
+    if (value === undefined || value === null) return;
+    const enabled = value !== false && value !== 'false';
+    this._screenshotEnabled = enabled;
+    this.canvas.setScreenshotEnabled(enabled);
+  }
+
+  @Input() set screenshotMethod(value: 'pageshot' | 'playwright' | string) {
+    if (value === 'pageshot' || value === 'playwright') {
+      this._screenshotMethod = value;
+      this.canvas.setScreenshotMethod(value);
+    }
+  }
+
   // Content type: set schema file name from outside (e.g. 'event.json')
   @Input() set contentType(value: string) {
     if (value) {
@@ -248,6 +311,7 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges {
   _schemaVersion = 'latest';
   _readonly: boolean | undefined = undefined;
   _borderless: boolean | undefined = undefined;
+  _flatGroups = false;
   _layoutName = 'default';
   _layout: LayoutConfig = DEFAULT_LAYOUT;
   
@@ -260,10 +324,19 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges {
   _showFloatingControls: boolean | undefined = undefined;
   _showFieldActions: boolean | undefined = undefined;
   _showUploadButton: boolean | undefined = undefined;
+  _showSaveButton: boolean | undefined = undefined;
+  _showJsonLoader: boolean | undefined = undefined;
+  _showLanguageSwitcher: boolean | undefined = undefined;
+  _showContentType: boolean | undefined = undefined;
+  _showResetButton: boolean | undefined = undefined;
   _showPageMode = false;
   _showContentTypeOnly = false;  // OEH: Show only content type in floating controls
   _highlightAi = false;  // Highlight AI-generated fields with purple text (disabled by default)
+  _showPreview = true;  // Show preview thumbnail (default: true)
+  _previewImageUrl: string | undefined = undefined;
   _columnsOverride: 1 | 2 | 3 | 4 | undefined = undefined;
+  _screenshotEnabled = true;
+  _screenshotMethod: 'pageshot' | 'playwright' = 'pageshot';
   
   private destroy$ = new Subject<void>();
   
@@ -430,13 +503,17 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges {
   
   async uploadToRepository(repository: 'staging' | 'prod' = 'staging'): Promise<void> {
     const metadata = this.canvas.getMetadataForRepository();
+    const state = this.canvas.getCurrentState();
+    const extendedText = state.userText || undefined;
     
     try {
       const result = await this.apiService.upload({
         metadata,
         repository,
         check_duplicates: true,
-        start_workflow: true
+        start_workflow: true,
+        write_extended_data: true,
+        extended_text: extendedText
       });
       
       this.uploadResult.emit({
@@ -462,7 +539,9 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges {
             metadata,
             repository,
             check_duplicates: false,
-            start_workflow: true
+            start_workflow: true,
+            write_extended_data: true,
+            extended_text: extendedText
           });
           this.uploadResult.emit({
             success: retryResult.success,
@@ -530,7 +609,7 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges {
   /**
    * Determine which layout component to use
    */
-  get activeLayout(): 'default' | 'plugin' | 'dialog' | 'detail' | 'metadatenpruefdialog' | 'prueftisch' | 'prueftisch-gross' {
+  get activeLayout(): 'default' | 'plugin' | 'dialog' | 'detail' | 'clean' | 'prueftisch' | 'prueftisch-org' {
     if (this._layoutName === 'plugin') {
       return 'plugin';
     }
@@ -540,14 +619,14 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges {
     if (this._layoutName === 'detail') {
       return 'detail';
     }
-    if (this._layoutName === 'metadatenpruefdialog') {
-      return 'metadatenpruefdialog';
+    if (this._layoutName === 'clean') {
+      return 'clean';
     }
     if (this._layoutName === 'prueftisch') {
       return 'prueftisch';
     }
-    if (this._layoutName === 'prueftisch-gross') {
-      return 'prueftisch-gross';
+    if (this._layoutName === 'prueftisch-org') {
+      return 'prueftisch-org';
     }
     return 'default';
   }
@@ -585,6 +664,26 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges {
   
   get effectiveShowUploadButton(): boolean {
     return this._showUploadButton ?? this._layout.elements.uploadButton;
+  }
+  
+  get effectiveShowSaveButton(): boolean {
+    return this._showSaveButton ?? this._layout.elements.saveButton;
+  }
+  
+  get effectiveShowJsonLoader(): boolean {
+    return this._showJsonLoader ?? this._layout.elements.jsonLoader;
+  }
+  
+  get effectiveShowLanguageSwitcher(): boolean {
+    return this._showLanguageSwitcher ?? this._layout.elements.languageSwitcher;
+  }
+  
+  get effectiveShowContentType(): boolean {
+    return this._showContentType ?? this._layout.elements.contentTypeSelector;
+  }
+  
+  get effectiveShowResetButton(): boolean {
+    return this._showResetButton ?? this._layout.elements.floatingResetButton;
   }
   
   get effectiveReadonly(): boolean {

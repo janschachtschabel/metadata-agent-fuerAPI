@@ -66,7 +66,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-top: 7px;
+    margin-top: 11px;
     margin-bottom: 2px;
     flex-wrap: wrap;
   }
@@ -81,5 +81,41 @@
 
   .btn-page-reload {
     @include shared.btn-neutral;
+  }
+
+  .screenshot-toggle {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+
+    ::ng-deep .mdc-switch__track::after {
+      background: shared.$surface-container !important;
+    }
+
+    ::ng-deep .mdc-switch--selected .mdc-switch__track::after {
+      background: shared.$surface-container !important;
+    }
+
+    ::ng-deep .mdc-switch--selected .mdc-switch__handle::after {
+      background: shared.$text-secondary !important;
+    }
+
+    ::ng-deep .mdc-switch--selected .mdc-switch__icon {
+      fill: #fff !important;
+    }
+
+    .toggle-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      margin-right: 4px;
+      vertical-align: middle;
+      opacity: 0.7;
+    }
+
+    .toggle-label {
+      font-size: 12px;
+      color: shared.$text-secondary;
+    }
   }
 }

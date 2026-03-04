@@ -1,7 +1,7 @@
 <!-- Detail Layout Template -->
 <!-- Text-heavy, borderless, multi-column detail view -->
 
-<div class="layout-container layout-detail" [style.background]="backgroundColor || null">
+<div class="layout-container layout-detail" [style.background]="backgroundColor || '#ffffff'">
 
   <!-- ===== INPUT AREA (optional) ===== -->
   <app-input-area
@@ -18,7 +18,9 @@
     (startUrlExtraction)="startUrlExtraction.emit($event)"
     (startNodeIdExtraction)="startNodeIdExtraction.emit($event)"
     (inputModeChange)="inputModeChange.emit($event)"
-    (reset)="reset.emit()">
+    (reset)="reset.emit()"
+    [screenshotEnabled]="screenshotEnabled"
+    (screenshotToggle)="screenshotToggle.emit($event)">
   </app-input-area>
 
   <!-- ===== STATUS BAR (optional) ===== -->
@@ -29,22 +31,29 @@
     (selectContentType)="selectContentType.emit($event)">
   </app-status-bar>
 
+  <!-- ===== PREVIEW THUMBNAIL ===== -->
+  <app-preview-thumbnail
+    *ngIf="showPreview && state?.previewImageUrl"
+    [imageUrl]="state!.previewImageUrl">
+  </app-preview-thumbnail>
+
   <!-- ===== FIELD GROUPS (column-per-group layout) ===== -->
-  <section class="fields-section" *ngIf="state?.fieldGroups?.length"
-           [class.group-columns-2]="columns === 2"
-           [class.group-columns-3]="columns === 3"
-           [class.group-columns-4]="columns === 4">
-    <ng-container *ngFor="let group of state?.fieldGroups; trackBy: trackByGroupId">
+  <section class="fields-section" *ngIf="displayGroups.length"
+           [class.group-columns-2]="!flatGroups && columns === 2"
+           [class.group-columns-3]="!flatGroups && columns === 3"
+           [class.group-columns-4]="!flatGroups && columns === 4">
+    <ng-container *ngFor="let group of displayGroups; trackBy: trackByGroupId">
       <div class="field-group" 
-           *ngIf="(group.isCore && showCoreFields) || (!group.isCore && showSpecialFields)">
+           *ngIf="(flatGroups || (group.isCore && showCoreFields) || (!group.isCore && showSpecialFields)) && (!readonly || getVisibleFields(group.fields).length > 0)">
         
-        <div class="group-header">
-          <h3>{{ group.label }}</h3>
-        </div>
+        <h2 class="group-header">{{ group.label }}</h2>
         
-        <div class="group-fields">
+        <div class="group-fields"
+             [class.columns-2]="flatGroups && columns === 2"
+             [class.columns-3]="flatGroups && columns === 3"
+             [class.columns-4]="flatGroups && columns === 4">
           <app-field
-            *ngFor="let field of getFlattenedFields(group.fields); trackBy: trackByFieldId"
+            *ngFor="let field of getVisibleFields(group.fields); trackBy: trackByFieldId"
             [field]="field"
             [readonly]="readonly"
             [showActions]="showFieldActions"
@@ -64,7 +73,7 @@
 
   <!-- ===== FLOATING CONTROLS ===== -->
   <div class="floating-controls" *ngIf="showFloatingControls">
-    <div class="floating-content-type">
+    <div class="floating-content-type" *ngIf="showContentType">
       <div class="split-button">
         <div class="split-button-label">
           <mat-icon>{{ state?.contentTypeIcon || 'category' }}</mat-icon>
@@ -87,6 +96,9 @@
         </button>
       </mat-menu>
     </div>
+    
+    <!-- Language Switcher -->
+    <app-language-switcher *ngIf="showLanguageSwitcher && !showContentTypeOnly"></app-language-switcher>
   </div>
 
 </div>

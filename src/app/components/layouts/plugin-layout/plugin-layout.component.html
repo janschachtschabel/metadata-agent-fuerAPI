@@ -21,7 +21,9 @@
     (startNodeIdExtraction)="startNodeIdExtraction.emit($event)"
     (inputModeChange)="inputModeChange.emit($event)"
     (reset)="reset.emit()"
-    (reloadFromPage)="reloadFromPage.emit()">
+    (reloadFromPage)="reloadFromPage.emit()"
+    [screenshotEnabled]="screenshotEnabled"
+    (screenshotToggle)="screenshotToggle.emit($event)">
   </app-input-area>
 
   <!-- ===== STATUS BAR (optional) ===== -->
@@ -39,11 +41,18 @@
     <span>{{ state!.extractionError }}</span>
   </div>
 
+  <!-- ===== PREVIEW THUMBNAIL ===== -->
+  <app-preview-thumbnail
+    *ngIf="showPreview && state?.previewImageUrl"
+    [imageUrl]="state!.previewImageUrl"
+    [compact]="true">
+  </app-preview-thumbnail>
+
   <!-- ===== FIELD GROUPS ===== -->
-  <section class="fields-section" *ngIf="state?.fieldGroups?.length">
-    <ng-container *ngFor="let group of state?.fieldGroups; trackBy: trackByGroupId">
+  <section class="fields-section" *ngIf="displayGroups.length">
+    <ng-container *ngFor="let group of displayGroups; trackBy: trackByGroupId">
       <div class="field-group" 
-           *ngIf="(group.isCore && showCoreFields) || (!group.isCore && showSpecialFields)">
+           *ngIf="(flatGroups || (group.isCore && showCoreFields) || (!group.isCore && showSpecialFields)) && (!readonly || getVisibleFields(group.fields).length > 0)">
         
         <div class="group-header">
           <mat-icon class="group-icon">{{ group.icon || getGroupIcon(group) }}</mat-icon>
@@ -54,7 +63,7 @@
         <div class="group-fields"
              [class.columns-2]="columns === 2">
           <app-field
-            *ngFor="let field of getFlattenedFields(group.fields); trackBy: trackByFieldId"
+            *ngFor="let field of getVisibleFields(group.fields); trackBy: trackByFieldId"
             [field]="field"
             [readonly]="readonly"
             [showActions]="showFieldActions"
@@ -74,7 +83,7 @@
 
   <!-- ===== FLOATING CONTROLS ===== -->
   <div class="floating-controls" *ngIf="showFloatingControls">
-    <div class="floating-content-type" *ngIf="state?.totalFields">
+    <div class="floating-content-type" *ngIf="showContentType && state?.totalFields">
       <div class="split-button">
         <div class="split-button-label">
           <mat-icon>{{ state?.contentTypeIcon || 'category' }}</mat-icon>
@@ -110,6 +119,7 @@
       </button>
       <button 
         mat-flat-button
+        *ngIf="showSaveButton"
         class="btn-action submit-pulse"
         [class.has-data]="!!state?.filledFields"
         [disabled]="!state?.filledFields"
@@ -119,12 +129,16 @@
       </button>
       <button 
         mat-flat-button
+        *ngIf="showResetButton"
         class="btn-action"
         (click)="reset.emit()">
         <mat-icon>refresh</mat-icon>
         <span>{{ 'CONTROLS.RESET' | translate }}</span>
       </button>
     </div>
+    
+    <!-- Language Switcher -->
+    <app-language-switcher *ngIf="showLanguageSwitcher && !showContentTypeOnly"></app-language-switcher>
   </div>
 
 </div>

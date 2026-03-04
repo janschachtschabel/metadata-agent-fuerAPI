@@ -50,7 +50,8 @@ export const DIALOG_LAYOUT: LayoutConfig = {
     jsonLoader: false,
     saveButton: true,
     uploadButton: false,
-    languageSwitcher: false
+    floatingResetButton: true,
+    languageSwitcher: true
   },
   style: {
     borderless: true,

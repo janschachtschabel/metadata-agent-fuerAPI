@@ -48,7 +48,7 @@ export { DIALOG_LAYOUT } from './presets/dialog.layout';
 export { DETAIL_LAYOUT } from './presets/detail.layout';
 export { METADATENPRUEFDIALOG_LAYOUT } from './presets/metadatenpruefdialog.layout';
 export { PRUEFTISCH_LAYOUT } from './presets/prueftisch.layout';
-export { PRUEFTISCH_GROSS_LAYOUT } from './presets/prueftisch-gross.layout';
+export { PRUEFTISCH_ORG_LAYOUT } from './presets/prueftisch-org.layout';
 
 // All layouts as object
 import { DEFAULT_LAYOUT } from './presets/default.layout';
@@ -57,7 +57,7 @@ import { DIALOG_LAYOUT } from './presets/dialog.layout';
 import { DETAIL_LAYOUT } from './presets/detail.layout';
 import { METADATENPRUEFDIALOG_LAYOUT } from './presets/metadatenpruefdialog.layout';
 import { PRUEFTISCH_LAYOUT } from './presets/prueftisch.layout';
-import { PRUEFTISCH_GROSS_LAYOUT } from './presets/prueftisch-gross.layout';
+import { PRUEFTISCH_ORG_LAYOUT } from './presets/prueftisch-org.layout';
 import { LayoutConfig, LayoutPreset, MODE_LAYOUT_MAP } from './layout.models';
 
 export const LAYOUT_PRESETS: Record<LayoutPreset, LayoutConfig> = {
@@ -65,9 +65,9 @@ export const LAYOUT_PRESETS: Record<LayoutPreset, LayoutConfig> = {
   plugin: PLUGIN_LAYOUT,
   dialog: DIALOG_LAYOUT,
   detail: DETAIL_LAYOUT,
-  metadatenpruefdialog: METADATENPRUEFDIALOG_LAYOUT,
+  clean: METADATENPRUEFDIALOG_LAYOUT,
   prueftisch: PRUEFTISCH_LAYOUT,
-  'prueftisch-gross': PRUEFTISCH_GROSS_LAYOUT
+  'prueftisch-org': PRUEFTISCH_ORG_LAYOUT
 };
 
 /**

@@ -1,0 +1,10 @@
+<div class="preview-thumbnail" *ngIf="imageUrl" [class.compact]="compact" [class.expanded]="isExpanded">
+  <div class="preview-header" (click)="toggleExpand()">
+    <mat-icon>image</mat-icon>
+    <span class="preview-label">{{ 'PREVIEW.TITLE' | translate }}</span>
+    <mat-icon class="expand-icon">{{ isExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+  </div>
+  <div class="preview-image-wrapper" *ngIf="isExpanded || !compact">
+    <img [src]="imageUrl" alt="Preview" class="preview-image" loading="lazy" />
+  </div>
+</div>

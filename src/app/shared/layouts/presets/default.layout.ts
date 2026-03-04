@@ -54,6 +54,7 @@ export const DEFAULT_LAYOUT: LayoutConfig = {
     jsonLoader: true,
     saveButton: true,
     uploadButton: true,
+    floatingResetButton: true,
     languageSwitcher: true
   },
   style: {

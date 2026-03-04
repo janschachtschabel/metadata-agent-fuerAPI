@@ -1,8 +1,8 @@
-<!-- Prüftisch Layout Template -->
-<!-- Review table layout - clean card-based display with icons -->
+<!-- Prüftisch Org Layout Template -->
+<!-- edu-sharing organizational review table with gray group headers -->
 
-<div class="layout-container layout-prueftisch" [style.background]="backgroundColor || '#ffffff'">
-  
+<div class="layout-container layout-prueftisch-org" [style.background]="backgroundColor || '#ffffff'">
+
   <!-- ===== INPUT AREA (optional) ===== -->
   <app-input-area
     *ngIf="showInputArea"
@@ -31,12 +31,6 @@
     (selectContentType)="selectContentType.emit($event)">
   </app-status-bar>
 
-  <!-- ===== EXTRACTION ERROR ===== -->
-  <div class="extraction-error" *ngIf="state?.extractionError">
-    <mat-icon>error_outline</mat-icon>
-    <span>{{ state!.extractionError }}</span>
-  </div>
-
   <!-- ===== PREVIEW THUMBNAIL ===== -->
   <app-preview-thumbnail
     *ngIf="showPreview && state?.previewImageUrl"
@@ -49,16 +43,13 @@
       <div class="field-group" 
            *ngIf="(flatGroups || (group.isCore && showCoreFields) || (!group.isCore && showSpecialFields)) && (!readonly || getVisibleFields(group.fields).length > 0)">
         
-        <!-- Group Header with Icon -->
+        <!-- Group Header: light gray bar with icon and uppercase label -->
         <div class="group-header">
           <mat-icon class="group-icon">{{ group.icon || getGroupIcon(group) }}</mat-icon>
           <h3>{{ group.label | uppercase }}</h3>
         </div>
         
-        <!-- Separator Line -->
-        <div class="header-separator"></div>
-        
-        <!-- Group Fields (multi-column grid) -->
+        <!-- Fields -->
         <div class="group-fields"
              [class.columns-2]="columns === 2"
              [class.columns-3]="columns === 3"
@@ -84,12 +75,11 @@
 
   <!-- ===== FLOATING CONTROLS ===== -->
   <div class="floating-controls" *ngIf="showFloatingControls">
-    <!-- Content Type Selector -->
     <div class="floating-content-type" *ngIf="showContentType">
       <div class="split-button">
         <div class="split-button-label">
           <mat-icon>{{ state?.contentTypeIcon || 'category' }}</mat-icon>
-          <span>{{ state?.contentTypeLabel || ('CONTENT_TYPE.NOT_DETECTED' | translate) }}</span>
+          <span>{{ state?.contentTypeLabel || ('CONTENT_TYPE.SELECT' | translate) }}</span>
         </div>
         <button 
           mat-icon-button
@@ -109,7 +99,7 @@
       </mat-menu>
     </div>
     
-    <!-- Language Switcher (separate floating pill) -->
+    <!-- Language Switcher -->
     <app-language-switcher *ngIf="showLanguageSwitcher && !showContentTypeOnly"></app-language-switcher>
   </div>
 

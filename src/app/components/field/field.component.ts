@@ -177,6 +177,10 @@ export class FieldComponent implements OnInit, OnChanges, OnDestroy {
     // For array fields, input is always empty (values shown as chips)
     if (Array.isArray(this.field.value)) {
       this.inputValue = '';
+    } else if (this.field.datatype === 'time' && this.field.value) {
+      // Extract HH:MM from any format (ISO datetime, plain time, etc.)
+      const timeMatch = String(this.field.value).match(/(\d{2}):(\d{2})/);
+      this.inputValue = timeMatch ? `${timeMatch[1]}:${timeMatch[2]}` : String(this.field.value);
     } else if (this.field.datatype === 'datetime' && this.field.value) {
       // Format datetime as German "DD.MM.YYYY HH:MM"
       this.inputValue = this.formatDateTimeGerman(String(this.field.value));

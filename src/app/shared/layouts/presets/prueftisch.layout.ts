@@ -55,6 +55,7 @@ export const PRUEFTISCH_LAYOUT: LayoutConfig = {
     jsonLoader: false,
     saveButton: false,
     uploadButton: false,
+    floatingResetButton: true,
     languageSwitcher: true
   },
   style: {

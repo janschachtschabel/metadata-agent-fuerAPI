@@ -22,6 +22,9 @@ export class CanvasService {
   private stateSubject = new BehaviorSubject<CanvasState>(createInitialState());
   public state$: Observable<CanvasState> = this.stateSubject.asObservable();
 
+  /** Cache field values per content type so switching back restores them */
+  private fieldValueCache = new Map<string, { values: Record<string, any>, origins: Record<string, boolean> }>();
+
   constructor(
     private schema: SchemaService,
     private api: ApiService,
@@ -40,6 +43,18 @@ export class CanvasService {
   private updateState(partial: Partial<CanvasState>): void {
     const current = this.getCurrentState();
     this.stateSubject.next({ ...current, ...partial });
+  }
+
+  // ===== Screenshot Configuration =====
+
+  setScreenshotEnabled(enabled: boolean): void {
+    this.updateState({ screenshotEnabled: enabled });
+    this.logger.info(`📸 Screenshot ${enabled ? 'enabled' : 'disabled'}`);
+  }
+
+  setScreenshotMethod(method: 'pageshot' | 'playwright'): void {
+    this.updateState({ screenshotMethod: method });
+    this.logger.info(`📸 Screenshot method: ${method}`);
   }
 
   // ===== API-based Extraction =====
@@ -89,6 +104,18 @@ export class CanvasService {
       await this.applyGeneratedMetadata(response);
       
       this.logger.info(`Extraction completed: ${response.processing.fields_extracted}/${response.processing.fields_total} fields`);
+
+      // Text mode: if ccm:wwwurl found and screenshot enabled, capture screenshot asynchronously
+      const afterState = this.getCurrentState();
+      if (afterState.screenshotEnabled && !afterState.previewImageUrl) {
+        const wwwurl = response.metadata?.['ccm:wwwurl'];
+        const targetUrl = Array.isArray(wwwurl) ? wwwurl[0] : wwwurl;
+        if (targetUrl && typeof targetUrl === 'string' && targetUrl.startsWith('http')) {
+          this.logger.info(`📸 Text mode: URL found in metadata (ccm:wwwurl), capturing screenshot: ${targetUrl}`);
+          // Fire-and-forget: capture screenshot in background, don't block extraction
+          this.captureScreenshotAsync(targetUrl, afterState.screenshotMethod);
+        }
+      }
     } catch (error: any) {
       this.logger.error('Extraction failed:', error);
       const msg = error?.error?.detail || error?.message || 'Unknown error';
@@ -124,7 +151,7 @@ export class CanvasService {
       const state = this.getCurrentState();
       const preSelectedSchemaFile = state.selectedContentType;
       
-      const response = await this.api.generate({
+      const generateRequest: any = {
         input_source: 'url',
         text: '',
         source_url: url,
@@ -137,7 +164,16 @@ export class CanvasService {
         normalize: true,
         existing_metadata: hasExistingData ? existingMetadata : undefined,
         schema_file: preSelectedSchemaFile || undefined
-      });
+      };
+
+      // Include screenshot request if enabled (captured in parallel by API)
+      if (state.screenshotEnabled) {
+        generateRequest.screenshot_method = state.screenshotMethod;
+        generateRequest.preview_url = url;
+        this.logger.info(`📸 Screenshot requested: ${state.screenshotMethod}`);
+      }
+
+      const response = await this.api.generate(generateRequest);
 
       await this.applyGeneratedMetadata(response);
       
@@ -254,7 +290,8 @@ export class CanvasService {
     const visibleFields = this.getCountableFields(allFields);
     const filledFields = visibleFields.filter(f => f.status === FieldStatus.FILLED).length;
 
-    this.updateState({
+    // Build state update
+    const stateUpdate: any = {
       coreFields: updatedCoreFields,
       specialFields: updatedSpecialFields,
       fieldGroups: this.groupFields(allFields),
@@ -262,7 +299,15 @@ export class CanvasService {
       filledFields,
       totalFields: visibleFields.length,
       extractionProgress: 100
-    });
+    };
+
+    // Set preview image URL if returned by API (async screenshot during generation)
+    if (response.preview_image_url) {
+      stateUpdate.previewImageUrl = response.preview_image_url;
+      this.logger.info('📸 Preview image received from API');
+    }
+
+    this.updateState(stateUpdate);
   }
 
   // ===== Collect Current Metadata =====
@@ -465,12 +510,23 @@ export class CanvasService {
 
   // ===== Content Type Selection =====
 
-  async selectContentType(schemaFile: string): Promise<void> {
+  async selectContentType(schemaFileOrUri: string): Promise<void> {
+    // Resolve URI to schema filename if needed
+    const schemaFile = this.schema.resolveSchemaFileOrUri(schemaFileOrUri);
+    
     const state = this.getCurrentState();
-    const hasExistingData = state.filledFields > 0;
+    
+    // Save current field values to cache before switching
+    const currentCt = state.selectedContentType;
+    if (currentCt) {
+      this.cacheFieldValues(currentCt, state);
+    }
     
     // Load schema and update UI
     await this.loadSpecialSchema(schemaFile);
+    
+    // Restore cached values for the new content type (if any)
+    this.restoreCachedFieldValues(schemaFile);
     
     const concept = this.schema.getContentTypeConcepts().find(c => c.schema_file === schemaFile);
     
@@ -481,11 +537,89 @@ export class CanvasService {
       contentTypeIcon: concept?.icon || 'category'
     });
     
-    // If data exists, clear and regenerate with new content type
-    if (hasExistingData && state.userText) {
+    // If user text exists and no cached data for this type, regenerate
+    const hasExistingData = state.filledFields > 0;
+    if (hasExistingData && state.userText && !this.fieldValueCache.has(schemaFile)) {
       this.logger.info(`Content type changed to ${schemaFile}, regenerating...`);
       await this.regenerateWithContentType(schemaFile);
     }
+  }
+
+  private cacheFieldValues(schemaFile: string, state: CanvasState): void {
+    const values: Record<string, any> = {};
+    const origins: Record<string, boolean> = {};
+    
+    // Cache special fields
+    for (const field of state.specialFields) {
+      if (field.status === FieldStatus.FILLED) {
+        values[field.fieldId] = field.value;
+        origins[field.fieldId] = field.isAiGenerated || false;
+      }
+      // Also cache subfield values
+      if (field.subFields) {
+        for (const sf of field.subFields) {
+          if (sf.status === FieldStatus.FILLED) {
+            values[sf.fieldId] = sf.value;
+            origins[sf.fieldId] = sf.isAiGenerated || false;
+          }
+        }
+      }
+    }
+    
+    if (Object.keys(values).length > 0) {
+      this.fieldValueCache.set(schemaFile, { values, origins });
+      this.logger.info(`Cached ${Object.keys(values).length} field values for ${schemaFile}`);
+    }
+  }
+
+  private restoreCachedFieldValues(schemaFile: string): void {
+    const cached = this.fieldValueCache.get(schemaFile);
+    if (!cached) return;
+    
+    const state = this.getCurrentState();
+    
+    const restoredSpecialFields = state.specialFields.map(field => {
+      const cachedValue = cached.values[field.fieldId];
+      if (cachedValue !== undefined) {
+        const isAi = cached.origins[field.fieldId] || false;
+        let updated = this.applyValueToField(field, cachedValue, isAi);
+        // Also restore subfield values
+        if (updated.subFields) {
+          updated = {
+            ...updated,
+            subFields: updated.subFields.map(sf => {
+              const sfValue = cached.values[sf.fieldId];
+              if (sfValue !== undefined) {
+                return this.applyValueToField(sf, sfValue, cached.origins[sf.fieldId] || false);
+              }
+              return sf;
+            })
+          };
+        }
+        return updated;
+      }
+      return field;
+    });
+    
+    const allFields = [...state.coreFields, ...restoredSpecialFields];
+    const visibleFields = this.getCountableFields(allFields);
+    const filledFields = visibleFields.filter(f => f.status === FieldStatus.FILLED).length;
+    
+    // Update metadata
+    const metadata = { ...state.metadata };
+    for (const [key, val] of Object.entries(cached.values)) {
+      metadata[key] = val;
+    }
+    
+    this.updateState({
+      specialFields: restoredSpecialFields,
+      fieldGroups: this.groupFields(allFields),
+      metadata,
+      filledFields,
+      totalFields: visibleFields.length
+    });
+    
+    this.logger.info(`Restored ${Object.keys(cached.values).length} cached field values for ${schemaFile}`);
   }
 
   private async regenerateWithContentType(schemaFile: string): Promise<void> {
@@ -531,13 +665,34 @@ export class CanvasService {
 
   // ===== Load Existing Metadata =====
 
-  async loadMetadata(metadata: Record<string, any>, schemaFile?: string, origins?: Record<string, 'ai' | 'user'>): Promise<void> {
+  async loadMetadata(metadata: Record<string, any>, schemaFile?: string, origins?: Record<string, 'ai' | 'user'>, options?: { skipCore?: boolean }): Promise<void> {
     this.logger.info('Loading existing metadata', origins ? '(with origins)' : '(no origins)');
     
-    await this.initializeCoreFields();
+    // Resolve URI to schema filename if needed
+    if (schemaFile) {
+      schemaFile = this.schema.resolveSchemaFileOrUri(schemaFile);
+    }
+    
+    // Initialize core fields unless explicitly skipped
+    if (!options?.skipCore) {
+      try {
+        await this.initializeCoreFields();
+      } catch (err) {
+        this.logger.warn('Core schema not available, continuing without core fields');
+      }
+    }
     
     if (schemaFile && schemaFile !== 'core.json') {
       await this.loadSpecialSchema(schemaFile);
+      
+      // Set content type label and icon so UI (floating buttons) reflects the loaded type
+      const concept = this.schema.getContentTypeConcepts().find(c => c.schema_file === schemaFile);
+      this.updateState({
+        detectedContentType: schemaFile,
+        selectedContentType: schemaFile,
+        contentTypeLabel: concept?.label || schemaFile.replace('.json', ''),
+        contentTypeIcon: concept?.icon || 'category'
+      });
     }
 
     const state = this.getCurrentState();
@@ -572,6 +727,12 @@ export class CanvasService {
       filledFields,
       totalFields: visibleFields.length
     });
+    
+    // Cache loaded values so switching content types and back preserves them
+    if (schemaFile && schemaFile !== 'core.json') {
+      const afterState = this.getCurrentState();
+      this.cacheFieldValues(schemaFile, afterState);
+    }
   }
 
   // ===== Export Metadata =====
@@ -608,19 +769,55 @@ export class CanvasService {
       }
     }
     
-    return {
+    // Resolve metadataset_uri from selected content type
+    const metadataset = state.selectedContentType || 'core.json';
+    const concept = this.schema.getContentTypeConcepts().find(c => c.schema_file === metadataset);
+    
+    const result: Record<string, any> = {
       contextName: this.schema.getContextName(),
       schemaVersion: this.schema.getSchemaVersion(),
-      metadataset: state.selectedContentType || 'core.json',
+      metadataset,
+      metadataset_uri: concept?.uri || null,
       language: this.i18n.currentLang,
       exportedAt: new Date().toISOString(),
       metadata: exportMetadata,
       _origins: origins
     };
+
+    // Include raw source text for extended data upload
+    if (state.userText) {
+      result['_source_text'] = state.userText;
+    }
+
+    // Include preview image URL if available (screenshot base64 or URL)
+    if (state.previewImageUrl) {
+      result['preview_image_url'] = state.previewImageUrl;
+    }
+
+    return result;
   }
 
   getMetadataForRepository(): Record<string, any> {
     return this.getMetadataForExport();
+  }
+
+  // ===== Async Screenshot Capture =====
+
+  /**
+   * Capture a screenshot in the background and update preview image when done.
+   * Fire-and-forget: does not block UI or extraction flow.
+   */
+  private captureScreenshotAsync(url: string, method: 'pageshot' | 'playwright'): void {
+    this.api.captureScreenshot(url, method).then(dataUrl => {
+      if (dataUrl) {
+        this.ngZone.run(() => {
+          this.updateState({ previewImageUrl: dataUrl });
+          this.logger.info('📸 Screenshot loaded into preview');
+        });
+      }
+    }).catch(err => {
+      this.logger.warn('📸 Async screenshot failed:', err);
+    });
   }
 
   // ===== Error Management =====
@@ -642,8 +839,8 @@ export class CanvasService {
 
   // ===== Content Type Change =====
 
-  async changeContentTypeManually(schemaFile: string, label?: string, icon?: string): Promise<void> {
-    await this.selectContentType(schemaFile);
+  async changeContentTypeManually(schemaFileOrUri: string, label?: string, icon?: string): Promise<void> {
+    await this.selectContentType(schemaFileOrUri);
     if (label) {
       this.updateState({ contentTypeLabel: label });
     }
@@ -657,9 +854,16 @@ export class CanvasService {
   async importJsonData(data: Record<string, any>): Promise<void> {
     this.logger.info('Importing JSON data');
     const metadata = data['metadata'] || data;
-    const schemaFile = data['metadataset'] || data['schemaFile'];
+    const schemaFile = data['metadataset'] || data['metadataset_uri'] || data['schemaFile'];
     const origins: Record<string, 'ai' | 'user'> | undefined = data['_origins'];
     await this.loadMetadata(metadata, schemaFile, origins);
+
+    // Set preview image URL if present in imported data (screenshot base64 or URL)
+    const previewImageUrl = data['preview_image_url'] || metadata['preview_image_url'];
+    if (previewImageUrl) {
+      this.updateState({ previewImageUrl });
+      this.logger.info('📸 Preview image loaded from imported JSON');
+    }
   }
 
   // ===== Helper Methods =====
@@ -702,10 +906,10 @@ export class CanvasService {
   /**
    * Get countable fields: all top-level fields that represent user-visible metadata.
    * Each parent with subfields counts as 1 field (not expanded).
-   * Excludes internal fields like ccm:oeh_flex_lrt (content type selector).
+   * Excludes internal fields like ccm:oeh_extendedType (content type selector).
    */
   private getCountableFields(fields: CanvasFieldState[]): CanvasFieldState[] {
-    return fields.filter(f => f.fieldId !== 'ccm:oeh_flex_lrt');
+    return fields.filter(f => f.fieldId !== 'ccm:oeh_extendedType');
   }
 
   private isValueFilled(value: any): boolean {
