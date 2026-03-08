@@ -227,11 +227,15 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges {
     }
   }
 
-  // Content type: set schema file name from outside (e.g. 'event.json')
+  // Content type: set schema file name or URI from outside (e.g. 'event.json' or 'http://w3id.org/openeduhub/vocabs/contentTypes/event')
   @Input() set contentType(value: string) {
     if (value) {
       this._pendingContentType = value;
-      this.applyContentType(value);
+      // Only apply immediately if content types are already loaded (i.e. after ngOnInit).
+      // Otherwise ngOnInit will re-apply the pending content type after core schema is loaded.
+      if (this.contentTypes.length > 0) {
+        this.applyContentType(value);
+      }
     }
   }
   
@@ -411,6 +415,12 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges {
       
       // Load content types
       this.contentTypes = await this.schema.getContentTypes();
+      
+      // Re-apply pending content type now that core schema is loaded (URI resolution requires it)
+      if (this._pendingContentType) {
+        await this.applyContentType(this._pendingContentType);
+        this._pendingContentType = null;
+      }
     } catch (error: any) {
       console.error('Failed to initialize schema:', error);
       const msg = error?.error?.detail || error?.message || 'API unreachable';
@@ -487,7 +497,9 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges {
     this.cdr.markForCheck();
   }
   
-  private async applyContentType(schemaFile: string): Promise<void> {
+  private async applyContentType(schemaFileOrUri: string): Promise<void> {
+    // Resolve URI to schema filename if needed (e.g. 'http://w3id.org/openeduhub/vocabs/contentTypes/event' → 'event.json')
+    const schemaFile = this.schema.resolveSchemaFileOrUri(schemaFileOrUri);
     // Find label from loaded content types, or use schema file name as fallback
     const ct = this.contentTypes.find(c => c.schemaFile === schemaFile);
     const label = ct?.label || schemaFile;
