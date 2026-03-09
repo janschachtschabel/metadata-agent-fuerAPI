@@ -43,7 +43,7 @@ export class DynamicTranslateLoader implements TranslateLoader {
 
     // apiUrl already known → fetch from API, fallback to local assets
     if (apiUrl) {
-      return this.http.get(`${apiUrl}/widget/i18n/${lang}.json`).pipe(
+      return this.http.get(`${apiUrl}/widget/assets/i18n/${lang}.json`).pipe(
         catchError(() => localFallback())
       );
     }
@@ -66,7 +66,7 @@ export class DynamicTranslateLoader implements TranslateLoader {
       // Try origin-based API path first (works when widget is served from subdirectory),
       // then fall back to local ./assets/i18n/ (works with ng serve)
       const origin = window.location.origin;
-      return this.http.get(`${origin}/widget/i18n/${lang}.json`).pipe(
+      return this.http.get(`${origin}/widget/assets/i18n/${lang}.json`).pipe(
         catchError(() => localFallback())
       );
     }
@@ -75,7 +75,7 @@ export class DynamicTranslateLoader implements TranslateLoader {
     return DynamicTranslateLoader.apiUrl$.pipe(
       take(1),
       switchMap(url =>
-        this.http.get(`${url}/widget/i18n/${lang}.json`).pipe(
+        this.http.get(`${url}/widget/assets/i18n/${lang}.json`).pipe(
           catchError(() => localFallback())
         )
       )
