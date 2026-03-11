@@ -102,7 +102,7 @@ class GermanDateAdapter extends NativeDateAdapter {
   ],
   templateUrl: './field.component.html',
   styleUrls: ['./field.component.scss'],
-  changeDetection: ChangeDetectionStrategy.Default
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class FieldComponent implements OnInit, OnChanges, OnDestroy {
   @Input() field!: CanvasFieldState;
@@ -127,6 +127,16 @@ export class FieldComponent implements OnInit, OnChanges, OnDestroy {
   // Validation state
   validationError: string | null = null;
   validationWarning: string | null = null;
+
+  // Cached template properties (recomputed only in ngOnChanges, not every CD cycle)
+  _isRadioField = false;
+  _useTreePicker = false;
+  _isSpecialDatatype = false;
+  _hasVocabulary = false;
+  _statusClass = '';
+  _radioOptions: { label: string; value: string }[] = [];
+  _selectedValues: string[] = [];
+  _chipDisplayCache = new Map<unknown, string>();
   
   // Pre-resolved placeholder texts (avoids translate pipe issues in property bindings
   // under OnPush ancestors, e.g. in browser extension web-component context)
@@ -170,7 +180,20 @@ export class FieldComponent implements OnInit, OnChanges, OnDestroy {
     if (changes['field']) {
       this.updateInputValue();
       this.updateFilteredOptions();
+      this.updateCachedProperties();
     }
+  }
+
+  /** Recompute all cached template properties when field changes */
+  private updateCachedProperties(): void {
+    this._isRadioField = this.isRadioField();
+    this._useTreePicker = this.useTreePicker();
+    this._isSpecialDatatype = this.isSpecialDatatype();
+    this._hasVocabulary = this.hasVocabulary();
+    this._statusClass = this.getStatusClass();
+    this._radioOptions = this.getRadioOptions();
+    this._selectedValues = this.getSelectedValues();
+    this._chipDisplayCache.clear();
   }
   
   private updateInputValue(): void {

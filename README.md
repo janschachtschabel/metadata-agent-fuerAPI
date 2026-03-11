@@ -69,19 +69,22 @@ Die Webkomponente nutzt **Roboto** als Textschrift sowie **Material Icons** (fil
 ### Grundlegende Einbettung
 
 ```html
+<!-- API-URL BEVOR Angular bootet setzen (verhindert i18n 404 auf localhost) -->
+<script>window.__ENV = { agentUrl: 'https://metadata-agent-api.vercel.app' };</script>
+
 <metadata-agent-canvas
-  api-url="https://metadata-agent-api.vercel.app"
   context-name="default"
   schema-version="latest"
   layout="default">
 </metadata-agent-canvas>
 ```
 
+> **Wichtig:** Die API-URL wird ueber `window.__ENV.agentUrl` gesetzt — **nicht** ueber das `api-url` HTML-Attribut. So kennt der i18n-Loader die richtige URL bereits beim Boot. Das `api-url` Attribut funktioniert weiterhin als Fallback.
+
 ### Minimale Einbettung (Nur-Lesen)
 
 ```html
 <metadata-agent-canvas
-  api-url="https://metadata-agent-api.vercel.app"
   readonly="true"
   borderless="true">
 </metadata-agent-canvas>
@@ -91,7 +94,6 @@ Die Webkomponente nutzt **Roboto** als Textschrift sowie **Material Icons** (fil
 
 ```html
 <metadata-agent-canvas
-  api-url="https://metadata-agent-api.vercel.app"
   layout="plugin"
   input-mode="url"
   show-floating-controls="true"
@@ -103,7 +105,6 @@ Die Webkomponente nutzt **Roboto** als Textschrift sowie **Material Icons** (fil
 
 ```html
 <metadata-agent-canvas
-  api-url="https://metadata-agent-api.vercel.app"
   layout="clean"
   context-name="mds_oeh"
   schema-version="1.8.0">
@@ -300,7 +301,7 @@ Fusszeile mit Feld-Statistik und Aktions-Buttons (nur im Default-Layout).
 
 | HTML-Attribut | Angular Input | Typ | Default | Beschreibung |
 |---------------|---------------|-----|---------|--------------|
-| `api-url` | `apiUrl` | string | environment.ts | URL der Metadata Agent API |
+| `api-url` | `apiUrl` | string | `window.__ENV.agentUrl` | URL der Metadata Agent API (empfohlen: ueber `window.__ENV` setzen) |
 | `context-name` | `contextName` | string | `'default'` | Schema-Kontext |
 | `schema-version` | `schemaVersion` | string | `'latest'` | Schema-Version |
 
@@ -316,13 +317,16 @@ Fusszeile mit Feld-Statistik und Aktions-Buttons (nur im Default-Layout).
 - **Verschiedene IDs:** Komplett isolierter State + eigene Events
 
 ```html
+<!-- API-URL einmalig setzen -->
+<script>window.__ENV = { agentUrl: 'https://metadata-agent-api.vercel.app' };</script>
+
 <!-- Isolierte Instanzen -->
-<metadata-agent-canvas api-url="..." instance-id="editor-a" layout="default"></metadata-agent-canvas>
-<metadata-agent-canvas api-url="..." instance-id="editor-b" layout="plugin"></metadata-agent-canvas>
+<metadata-agent-canvas instance-id="editor-a" layout="default"></metadata-agent-canvas>
+<metadata-agent-canvas instance-id="editor-b" layout="plugin"></metadata-agent-canvas>
 
 <!-- Synchrone Instanzen (geteilter State, keine doppelten Events) -->
-<metadata-agent-canvas api-url="..." instance-id="shared" layout="default"></metadata-agent-canvas>
-<metadata-agent-canvas api-url="..." instance-id="shared" layout="plugin"></metadata-agent-canvas>
+<metadata-agent-canvas instance-id="shared" layout="default"></metadata-agent-canvas>
+<metadata-agent-canvas instance-id="shared" layout="plugin"></metadata-agent-canvas>
 ```
 
 **Runtime-Wechsel:** `document.querySelector('metadata-agent-canvas').instanceId = 'new-id';`
@@ -379,7 +383,7 @@ Fusszeile mit Feld-Statistik und Aktions-Buttons (nur im Default-Layout).
 
 ```html
 <!-- Debug aktivieren -->
-<metadata-agent-canvas api-url="..." debug="true"></metadata-agent-canvas>
+<metadata-agent-canvas debug="true"></metadata-agent-canvas>
 ```
 
 Per JavaScript: `element.debug = true;` / `element.debug = false;`
@@ -458,7 +462,6 @@ Jeder Wert kann per Attribut ueberschrieben werden.
 
 ```html
 <metadata-agent-canvas
-  api-url="https://metadata-agent-api.vercel.app"
   context-name="default"
   schema-version="latest"
   layout="default"
@@ -512,7 +515,6 @@ Jeder Wert kann per Attribut ueberschrieben werden.
 
 ```html
 <metadata-agent-canvas
-  api-url="https://metadata-agent-api.vercel.app"
   layout="plugin"
   input-mode="url"
   show-content-type-only="true">
@@ -523,7 +525,6 @@ Jeder Wert kann per Attribut ueberschrieben werden.
 
 ```html
 <metadata-agent-canvas
-  api-url="https://metadata-agent-api.vercel.app"
   layout="prueftisch-org"
   content-type="event.json">
 </metadata-agent-canvas>
@@ -533,7 +534,6 @@ Jeder Wert kann per Attribut ueberschrieben werden.
 
 ```html
 <metadata-agent-canvas
-  api-url="https://metadata-agent-api.vercel.app"
   layout="prueftisch"
   content-type="event.json">
 </metadata-agent-canvas>
@@ -809,11 +809,12 @@ export const environment = {
 };
 ```
 
-### Per HTML-Attribut (ueberschreibt Environment)
+### Per window.__ENV (empfohlen, ueberschreibt Environment)
 
 ```html
+<script>window.__ENV = { agentUrl: 'http://localhost:8000' };</script>
+
 <metadata-agent-canvas
-  api-url="http://localhost:8000"
   context-name="mds_oeh"
   schema-version="1.8.0">
 </metadata-agent-canvas>

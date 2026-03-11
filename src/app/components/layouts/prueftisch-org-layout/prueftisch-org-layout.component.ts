@@ -3,7 +3,9 @@ import {
   Input, 
   Output, 
   EventEmitter, 
-  ChangeDetectionStrategy 
+  ChangeDetectionStrategy,
+  OnChanges,
+  SimpleChanges
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
@@ -48,7 +50,7 @@ import { PreviewThumbnailComponent } from '../../shared/preview-thumbnail/previe
   styleUrls: ['./prueftisch-org-layout.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class PrueftischOrgLayoutComponent {
+export class PrueftischOrgLayoutComponent implements OnChanges {
   @Input() state: CanvasState | null = null;
   @Input() contentTypes: ContentType[] = [];
   @Input() backgroundColor = '';
@@ -75,11 +77,11 @@ export class PrueftischOrgLayoutComponent {
   @Input() showPreview = true;
   @Input() screenshotEnabled = true;
 
-  get displayGroups(): FieldGroup[] {
-    if (!this.state?.fieldGroups) return [];
-    if (!this.flatGroups) return this.state.fieldGroups;
-    return this.mergeGroupsBySchema(this.state.fieldGroups);
-  }
+  // Cached computed values (recomputed in ngOnChanges, not every CD cycle)
+  _displayGroups: FieldGroup[] = [];
+  _visibleFieldsMap = new Map<string, CanvasFieldState[]>();
+  _filledCountMap = new Map<string, number>();
+  _flatCountMap = new Map<string, number>();
 
   private mergeGroupsBySchema(groups: FieldGroup[]): FieldGroup[] {
     if (groups.length === 0) return [];
@@ -104,6 +106,32 @@ export class PrueftischOrgLayoutComponent {
       fields: allFields,
       isCore: false
     }];
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['state'] || changes['flatGroups'] || changes['showCoreFields'] || changes['showSpecialFields'] || changes['readonly']) {
+      this._displayGroups = this.computeDisplayGroups();
+      this.precomputeGroupData();
+    }
+  }
+
+  private computeDisplayGroups(): FieldGroup[] {
+    if (!this.state?.fieldGroups) return [];
+    if (!this.flatGroups) return this.state.fieldGroups;
+    return this.mergeGroupsBySchema(this.state.fieldGroups);
+  }
+
+  private precomputeGroupData(): void {
+    this._visibleFieldsMap.clear();
+    this._filledCountMap.clear();
+    this._flatCountMap.clear();
+    for (const group of this._displayGroups) {
+      const visible = this.getVisibleFields(group.fields);
+      this._visibleFieldsMap.set(group.id, visible);
+      const flat = this.getFlattenedFields(group.fields);
+      this._filledCountMap.set(group.id, flat.filter(f => f.status === FieldStatus.FILLED).length);
+      this._flatCountMap.set(group.id, flat.length);
+    }
   }
 
   @Output() userTextChange = new EventEmitter<string>();

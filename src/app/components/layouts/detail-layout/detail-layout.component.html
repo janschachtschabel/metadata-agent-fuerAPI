@@ -38,13 +38,13 @@
   </app-preview-thumbnail>
 
   <!-- ===== FIELD GROUPS (column-per-group layout) ===== -->
-  <section class="fields-section" *ngIf="displayGroups.length"
+  <section class="fields-section" *ngIf="_displayGroups.length"
            [class.group-columns-2]="!flatGroups && columns === 2"
            [class.group-columns-3]="!flatGroups && columns === 3"
            [class.group-columns-4]="!flatGroups && columns === 4">
-    <ng-container *ngFor="let group of displayGroups; trackBy: trackByGroupId">
+    <ng-container *ngFor="let group of _displayGroups; trackBy: trackByGroupId">
       <div class="field-group" 
-           *ngIf="(flatGroups || (group.isCore && showCoreFields) || (!group.isCore && showSpecialFields)) && (!readonly || getVisibleFields(group.fields).length > 0)">
+           *ngIf="(flatGroups || (group.isCore && showCoreFields) || (!group.isCore && showSpecialFields)) && (!readonly || (_visibleFieldsMap.get(group.id)?.length ?? 0) > 0)">
         
         <h2 class="group-header">{{ group.label }}</h2>
         
@@ -53,7 +53,7 @@
              [class.columns-3]="flatGroups && columns === 3"
              [class.columns-4]="flatGroups && columns === 4">
           <app-field
-            *ngFor="let field of getVisibleFields(group.fields); trackBy: trackByFieldId"
+            *ngFor="let field of _visibleFieldsMap.get(group.id); trackBy: trackByFieldId"
             [field]="field"
             [readonly]="readonly"
             [showActions]="showFieldActions"

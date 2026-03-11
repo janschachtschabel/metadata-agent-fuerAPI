@@ -77,6 +77,10 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges {
     return this._borderless === true || (this._borderless === undefined && this._layout.style.borderless);
   }
 
+  @HostBinding('class.ready') get isReady(): boolean {
+    return this._initialized;
+  }
+
   // ===== INPUT PROPERTIES =====
 
   /**
@@ -380,7 +384,11 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges {
   _columnsOverride: 1 | 2 | 3 | 4 | undefined = undefined;
   _screenshotEnabled = true;
   _screenshotMethod: 'pageshot' | 'playwright' = 'pageshot';
+
+  /** Prevents rendering until all initial @Input setters have fired (anti-flicker) */
+  _initialized = false;
   
+  private _metadataChangeTimer: any = null;
   private destroy$ = new Subject<void>();
   
   constructor(
@@ -439,12 +447,18 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges {
   // ===== LIFECYCLE =====
   
   async ngOnInit(): Promise<void> {
+    // All @Input setters have fired by now → safe to render
+    this._initialized = true;
+
     // Subscribe to state changes (always, even if schema load fails)
     this.canvas.state$.pipe(takeUntil(this.destroy$)).subscribe((state: CanvasState) => {
       this.state = state;
-      // Only the primary component per instance emits events (prevents duplicates)
+      // Debounce metadataChange emissions (50ms) to avoid flooding the host page
       if (this._isPrimary) {
-        this.metadataChange.emit(this.canvas.getMetadataForRepository());
+        clearTimeout(this._metadataChangeTimer);
+        this._metadataChangeTimer = setTimeout(() => {
+          this.ngZone.run(() => this.metadataChange.emit(this.canvas.getMetadataForRepository()));
+        }, 50);
       }
       this.cdr.markForCheck();
     });

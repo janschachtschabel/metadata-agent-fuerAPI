@@ -3,7 +3,9 @@ import {
   Input, 
   Output, 
   EventEmitter, 
-  ChangeDetectionStrategy 
+  ChangeDetectionStrategy,
+  OnChanges,
+  SimpleChanges
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
@@ -35,19 +37,30 @@ import { CanvasState, ContentType, CanvasFieldState, FieldGroup, FieldStatus } f
   styleUrls: ['./status-bar.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class StatusBarComponent {
+export class StatusBarComponent implements OnChanges {
   @Input() state: CanvasState | null = null;
   @Input() contentTypes: ContentType[] = [];
   @Input() compact = false;
 
   @Output() selectContentType = new EventEmitter<ContentType>();
 
-  getProgressPercent(): number {
+  // Cached computed values (recomputed in ngOnChanges, not every CD cycle)
+  _progressPercent = 0;
+  _requiredStatus = { filled: 0, total: 0 };
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['state']) {
+      this._progressPercent = this.computeProgressPercent();
+      this._requiredStatus = this.computeRequiredFieldsStatus();
+    }
+  }
+
+  private computeProgressPercent(): number {
     if (!this.state || this.state.totalFields === 0) return 0;
     return Math.round((this.state.filledFields / this.state.totalFields) * 100);
   }
 
-  getRequiredFieldsStatus(): { filled: number; total: number } {
+  private computeRequiredFieldsStatus(): { filled: number; total: number } {
     if (!this.state?.fieldGroups) return { filled: 0, total: 0 };
     
     let filled = 0;

@@ -1,8 +1,8 @@
 <!-- Only render actual input fields, skip parent containers -->
-<div class="canvas-field" [ngClass]="getStatusClass()" [class.readonly-mode]="readonly" *ngIf="!field.isParent">
+<div class="canvas-field" [ngClass]="_statusClass" [class.readonly-mode]="readonly" *ngIf="!field.isParent">
 
   <!-- Radio fields rendered outside mat-form-field (no MatFormFieldControl needed) -->
-  <ng-container *ngIf="isRadioField()">
+  <ng-container *ngIf="_isRadioField">
     <div class="radio-field-label">
       <ng-container *ngIf="field.parentFieldId">{{ field.parentFieldLabel }} ({{ field.label }})</ng-container>
       <ng-container *ngIf="!field.parentFieldId">{{ field.label }}</ng-container>
@@ -14,14 +14,14 @@
       [disabled]="field.status === FieldStatus.EXTRACTING || readonly"
       class="radio-group">
       <mat-radio-button [value]="null">{{ 'FIELD.RADIO.NO_SELECTION' | translate }}</mat-radio-button>
-      <mat-radio-button *ngFor="let opt of getRadioOptions()" [value]="opt.value">
+      <mat-radio-button *ngFor="let opt of _radioOptions" [value]="opt.value">
         {{ opt.label }}
       </mat-radio-button>
     </mat-radio-group>
   </ng-container>
 
   <mat-form-field
-    *ngIf="!isRadioField()"
+    *ngIf="!_isRadioField"
     appearance="outline"
     floatLabel="always"
     subscriptSizing="dynamic"
@@ -159,7 +159,7 @@
 
     <!-- === Tree Picker fields (vocab with >=5 concepts or hierarchical) === -->
     <div class="inline-chips-input picker-trigger"
-         *ngIf="!isSpecialDatatype() && useTreePicker()"
+         *ngIf="!_isSpecialDatatype && _useTreePicker"
          (mousedown)="!readonly && !pickerOpen && openPicker(); $event.preventDefault()">
       <mat-chip-set
         *ngIf="(field.multiple || field.datatype === 'array') && field.value?.length"
@@ -193,7 +193,7 @@
 
     <!-- Dropdown arrow for tree picker fields -->
     <mat-icon
-      *ngIf="useTreePicker() && !isSpecialDatatype()"
+      *ngIf="_useTreePicker && !_isSpecialDatatype"
       matIconSuffix
       class="dropdown-arrow"
       (mousedown)="!readonly && !pickerOpen && openPicker(); $event.preventDefault()">
@@ -201,7 +201,7 @@
     </mat-icon>
 
     <!-- === Regular text/array fields: inline chips + textarea with autocomplete === -->
-    <div class="inline-chips-input" *ngIf="!isSpecialDatatype() && !useTreePicker()">
+    <div class="inline-chips-input" *ngIf="!_isSpecialDatatype && !_useTreePicker">
       <mat-chip-set
         *ngIf="(field.multiple || field.datatype === 'array') && field.value?.length"
         class="chip-container"
@@ -232,7 +232,7 @@
 
     <!-- Dropdown arrow for non-tree-picker vocabulary fields -->
     <mat-icon
-      *ngIf="hasVocabulary() && !isSpecialDatatype() && !useTreePicker()"
+      *ngIf="_hasVocabulary && !_isSpecialDatatype && !_useTreePicker"
       matIconSuffix
       class="dropdown-arrow"
       (click)="autocompleteTrigger?.openPanel()">
@@ -261,12 +261,12 @@
   </mat-form-field>
 
   <!-- Vocabulary Tree Picker (opens as overlay below the field) -->
-  <div class="tree-picker-anchor" *ngIf="useTreePicker()">
+  <div class="tree-picker-anchor" *ngIf="_useTreePicker">
     <app-vocab-tree-picker
       [concepts]="field.vocabulary?.concepts || []"
       [hierarchical]="!!(field.vocabulary && (field.vocabulary)['hierarchical'])"
       [multiple]="field.multiple || field.datatype === 'array'"
-      [selectedValues]="getSelectedValues()"
+      [selectedValues]="_selectedValues"
       [open]="pickerOpen"
       (selectionChange)="onTreeSelectionChange($event)"
       (closed)="closePicker()">

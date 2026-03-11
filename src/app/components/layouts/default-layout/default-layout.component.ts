@@ -3,7 +3,9 @@ import {
   Input, 
   Output, 
   EventEmitter, 
-  ChangeDetectionStrategy 
+  ChangeDetectionStrategy,
+  OnChanges,
+  SimpleChanges
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -60,7 +62,7 @@ import { PreviewThumbnailComponent } from '../../shared/preview-thumbnail/previe
   styleUrls: ['./default-layout.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class DefaultLayoutComponent {
+export class DefaultLayoutComponent implements OnChanges {
   // Data from parent
   @Input() state: CanvasState | null = null;
   @Input() contentTypes: ContentType[] = [];
@@ -96,11 +98,14 @@ export class DefaultLayoutComponent {
   @Input() showPreview = true;
   @Input() screenshotEnabled = true;
   
-  get displayGroups(): FieldGroup[] {
-    if (!this.state?.fieldGroups) return [];
-    if (!this.flatGroups) return this.state.fieldGroups;
-    return this.mergeGroupsBySchema(this.state.fieldGroups);
-  }
+  // Cached computed values (recomputed in ngOnChanges, not every CD cycle)
+  _displayGroups: FieldGroup[] = [];
+  _progressPercent = 0;
+  _requiredStatus = { filled: 0, total: 0 };
+  /** Pre-computed visible fields per group (avoids recreating arrays in *ngFor) */
+  _visibleFieldsMap = new Map<string, CanvasFieldState[]>();
+  _filledCountMap = new Map<string, number>();
+  _flatCountMap = new Map<string, number>();
   
   private mergeGroupsBySchema(groups: FieldGroup[]): FieldGroup[] {
     if (groups.length === 0) return [];
@@ -127,6 +132,55 @@ export class DefaultLayoutComponent {
     }];
   }
   
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['state'] || changes['flatGroups'] || changes['showCoreFields'] || changes['showSpecialFields'] || changes['readonly']) {
+      this._displayGroups = this.computeDisplayGroups();
+      this._progressPercent = this.computeProgressPercent();
+      this._requiredStatus = this.computeRequiredFieldsStatus();
+      this.precomputeGroupData();
+    }
+  }
+
+  private computeDisplayGroups(): FieldGroup[] {
+    if (!this.state?.fieldGroups) return [];
+    if (!this.flatGroups) return this.state.fieldGroups;
+    return this.mergeGroupsBySchema(this.state.fieldGroups);
+  }
+
+  private computeProgressPercent(): number {
+    if (!this.state || this.state.totalFields === 0) return 0;
+    return Math.round((this.state.filledFields / this.state.totalFields) * 100);
+  }
+
+  private computeRequiredFieldsStatus(): { filled: number; total: number } {
+    if (!this.state?.fieldGroups) return { filled: 0, total: 0 };
+    let filled = 0;
+    let total = 0;
+    for (const group of this.state.fieldGroups) {
+      const flatFields = this.getFlattenedFields(group.fields);
+      for (const field of flatFields) {
+        if (field.isRequired) {
+          total++;
+          if (field.status === FieldStatus.FILLED) filled++;
+        }
+      }
+    }
+    return { filled, total };
+  }
+
+  private precomputeGroupData(): void {
+    this._visibleFieldsMap.clear();
+    this._filledCountMap.clear();
+    this._flatCountMap.clear();
+    for (const group of this._displayGroups) {
+      const visible = this.getVisibleFields(group.fields);
+      this._visibleFieldsMap.set(group.id, visible);
+      const flat = this.getFlattenedFields(group.fields);
+      this._filledCountMap.set(group.id, flat.filter(f => f.status === FieldStatus.FILLED).length);
+      this._flatCountMap.set(group.id, flat.length);
+    }
+  }
+
   // Events
   @Output() userTextChange = new EventEmitter<string>();
   @Output() sourceUrlChange = new EventEmitter<string>();
@@ -154,36 +208,9 @@ export class DefaultLayoutComponent {
     return group.id;
   }
   
-  // Helpers
-  getProgressPercent(): number {
-    if (!this.state || this.state.totalFields === 0) return 0;
-    return Math.round((this.state.filledFields / this.state.totalFields) * 100);
-  }
-  
-  getRequiredFieldsStatus(): { filled: number; total: number } {
-    if (!this.state?.fieldGroups) return { filled: 0, total: 0 };
-    
-    let filled = 0;
-    let total = 0;
-    
-    for (const group of this.state.fieldGroups) {
-      const flatFields = this.getFlattenedFields(group.fields);
-      for (const field of flatFields) {
-        if (field.isRequired) {
-          total++;
-          if (field.status === FieldStatus.FILLED) {
-            filled++;
-          }
-        }
-      }
-    }
-    
-    return { filled, total };
-  }
-  
+  // Helpers (kept for backward compat, but templates should use cached _ properties)
   getFilledCount(group: FieldGroup): number {
-    const flatFields = this.getFlattenedFields(group.fields);
-    return flatFields.filter(f => f.status === FieldStatus.FILLED).length;
+    return this._filledCountMap.get(group.id) ?? 0;
   }
   
   getFlattenedFields(fields: CanvasFieldState[]): CanvasFieldState[] {

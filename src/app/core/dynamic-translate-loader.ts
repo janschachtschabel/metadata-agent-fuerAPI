@@ -35,6 +35,15 @@ export class DynamicTranslateLoader implements TranslateLoader {
   constructor(private http: HttpClient) {}
 
   getTranslation(lang: string): Observable<any> {
+    // Early resolution: check window.__ENV.agentUrl (set before Angular boots)
+    // This allows external embedders on localhost to provide the API URL upfront:
+    //   <script>window.__ENV = { agentUrl: 'https://metadata-agent-api.vercel.app' };</script>
+    const envUrl = (typeof window !== 'undefined' && (window as any).__ENV?.agentUrl) as string | undefined;
+    if (envUrl && !DynamicTranslateLoader.apiUrl) {
+      if (WidgetDebug.enabled) console.debug(`[i18n] Using window.__ENV.agentUrl: ${envUrl}`);
+      DynamicTranslateLoader.setApiUrl(envUrl);
+    }
+
     const apiUrl = DynamicTranslateLoader.apiUrl;
 
     // Local fallback: try ./assets/i18n/ (works on localhost and in
@@ -66,10 +75,7 @@ export class DynamicTranslateLoader implements TranslateLoader {
       );
     }
 
-    // Local dev (ng serve) or extension page: try local assets immediately
-    const isLocal = typeof window !== 'undefined'
-      && (window.location.hostname === 'localhost'
-        || window.location.hostname === '127.0.0.1');
+    // Extension page: try local assets immediately
     const isExtension = typeof window !== 'undefined'
       && (window.location.protocol === 'chrome-extension:'
         || window.location.protocol === 'moz-extension:');
@@ -83,17 +89,30 @@ export class DynamicTranslateLoader implements TranslateLoader {
       );
     }
 
+    // Local dev (ng serve) without __ENV: try origin-based path, then local fallback.
+    // If __ENV.agentUrl was set, we already resolved above via apiUrl — never reach here.
+    const isLocal = typeof window !== 'undefined'
+      && (window.location.hostname === 'localhost'
+        || window.location.hostname === '127.0.0.1');
+
     if (isLocal) {
-      // Try origin-based API path first (works when widget is served from subdirectory),
-      // then fall back to local ./assets/i18n/ (works with ng serve)
-      const origin = window.location.origin;
-      const url = `${origin}/widget/assets/i18n/${lang}.json`;
-      if (WidgetDebug.enabled) console.debug(`[i18n] Local mode → ${url}`);
-      return this.http.get(url).pipe(
-        switchMap(data => of(logSuccess(url)(data))),
-        catchError((err) => {
-          if (WidgetDebug.enabled) console.warn(`[i18n] ✗ Failed: ${url} (${err.status})`);
-          return localFallback();
+      // Try local ./assets/i18n/ first (works with ng serve),
+      // then fall back to origin-based /widget/assets/i18n/ (works when API serves widget)
+      const localUrl = `./assets/i18n/${lang}.json`;
+      if (WidgetDebug.enabled) console.debug(`[i18n] Local mode → ${localUrl}`);
+      return this.http.get(localUrl).pipe(
+        switchMap(data => of(logSuccess(localUrl)(data))),
+        catchError(() => {
+          const origin = window.location.origin;
+          const widgetUrl = `${origin}/widget/assets/i18n/${lang}.json`;
+          if (WidgetDebug.enabled) console.debug(`[i18n] Local fallback → ${widgetUrl}`);
+          return this.http.get(widgetUrl).pipe(
+            switchMap(data => of(logSuccess(widgetUrl)(data))),
+            catchError((err) => {
+              if (WidgetDebug.enabled) console.warn(`[i18n] ✗ Failed: ${widgetUrl} (${err.status})`);
+              return of({});
+            })
+          );
         })
       );
     }

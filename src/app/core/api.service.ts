@@ -211,7 +211,11 @@ export class ApiService {
     private http: HttpClient,
     private logger: LoggerService
   ) {
-    this.apiUrl = (environment as any).apiUrl || '';
+    // Priority: window.__ENV.agentUrl > environment.apiUrl
+    // window.__ENV.agentUrl is set before Angular boots by the embedding page:
+    //   <script>window.__ENV = { agentUrl: 'https://metadata-agent-api.vercel.app' };</script>
+    const envUrl = (typeof window !== 'undefined' && (window as any).__ENV?.agentUrl) as string | undefined;
+    this.apiUrl = (envUrl || (environment as any).apiUrl || '').replace(/\/$/, '');
   }
 
   setApiUrl(url: string): void {

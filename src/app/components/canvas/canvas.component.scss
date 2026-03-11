@@ -7,6 +7,13 @@
   display: block;
   width: 100%;
   height: 100%;
+  // Anti-flicker: invisible until all @Input setters have fired and _initialized is set
+  opacity: 0;
+  transition: opacity 0.15s ease-in;
+
+  &.ready {
+    opacity: 1;
+  }
 }
 
 /* Layout components fill the host */

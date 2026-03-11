@@ -1,7 +1,8 @@
 <!-- Canvas Component - Orchestrator -->
 <!-- Delegates rendering to the active layout component -->
+<!-- _initialized prevents flicker: no render until all @Input setters have fired in ngOnInit -->
 
-<ng-container [ngSwitch]="activeLayout">
+<ng-container *ngIf="_initialized" [ngSwitch]="activeLayout">
   
   <!-- Default Layout (Edit Mode) -->
   <app-default-layout 
