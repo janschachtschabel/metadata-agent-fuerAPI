@@ -295,34 +295,39 @@ export class CanvasService {
 
     this.logger.debug('API Response metadata:', metadata);
 
-    // Update content type if detected
+    // Prepare content-type update (batched into a single updateState below)
+    let contentTypeUpdate: Partial<CanvasState> = {};
+    let preparedSpecialFields: CanvasFieldState[] | null = null;
+
     if (response.metadataset && response.metadataset !== 'core.json') {
       // Only reload schema if content type changed (skip on re-extraction with same schema
       // to preserve existing field values that may not be in the API response)
       const isNewSchema = state.selectedContentType !== response.metadataset;
       if (isNewSchema) {
-        await this.loadSpecialSchema(response.metadataset);
+        // Prepare fields WITHOUT triggering updateState — will be batched below
+        preparedSpecialFields = await this.prepareSpecialFields(response.metadataset);
       }
       
       // Get label and icon for detected content type
       const concept = this.schema.getContentTypeConcepts().find(c => c.schema_file === response.metadataset);
       
-      this.updateState({
+      contentTypeUpdate = {
         detectedContentType: response.metadataset,
         selectedContentType: response.metadataset,
         contentTypeLabel: concept?.label || response.metadataset.replace('.json', ''),
         contentTypeIcon: concept?.icon || 'category'
-      });
+      };
     }
 
-    // Re-fetch state after potential schema load
-    const currentState = this.getCurrentState();
+    // Determine current fields (use newly prepared special fields if schema changed)
+    const currentCoreFields = state.coreFields || [];
+    const currentSpecialFields = preparedSpecialFields ?? (state.specialFields || []);
 
     // Use _origins from API response to correctly track AI vs user fields
     const origins = response._origins;
 
     // Update all fields with values from API (with subfield expansion for complex objects)
-    const updatedCoreFields = (currentState.coreFields || []).map(field => {
+    const updatedCoreFields = currentCoreFields.map(field => {
       const value = metadata[field.fieldId];
       if (value !== undefined && value !== null) {
         const isAi = origins ? origins[field.fieldId] !== 'user' : true;
@@ -331,7 +336,7 @@ export class CanvasService {
       return field;
     });
 
-    const updatedSpecialFields = (currentState.specialFields || []).map(field => {
+    const updatedSpecialFields = currentSpecialFields.map(field => {
       const value = metadata[field.fieldId];
       if (value !== undefined && value !== null) {
         const isAi = origins ? origins[field.fieldId] !== 'user' : true;
@@ -353,8 +358,9 @@ export class CanvasService {
       }
     }
 
-    // Build state update
+    // Build single batched state update (content type + special fields + field values)
     const stateUpdate: any = {
+      ...contentTypeUpdate,
       coreFields: updatedCoreFields,
       specialFields: updatedSpecialFields,
       fieldGroups: this.groupFields(allFields),
@@ -377,6 +383,7 @@ export class CanvasService {
       this.logger.info('📸 Preview image received from API');
     }
 
+    // Single updateState instead of 3 separate calls — avoids intermediate re-renders
     this.updateState(stateUpdate);
   }
 
@@ -458,9 +465,13 @@ export class CanvasService {
     });
   }
 
-  private async loadSpecialSchema(schemaFile: string): Promise<void> {
+  /**
+   * Prepare special fields from a content-type schema WITHOUT triggering a state update.
+   * Returns the prepared field array, or null if schema couldn't be loaded.
+   */
+  private async prepareSpecialFields(schemaFile: string): Promise<CanvasFieldState[] | null> {
     const specialSchemaFields = await this.schema.getFields(schemaFile);
-    if (!specialSchemaFields) return;
+    if (!specialSchemaFields) return null;
 
     const groups = await this.schema.getGroups(schemaFile);
     const language = this.schema.getActiveLanguage();
@@ -471,9 +482,14 @@ export class CanvasService {
     const schemaName = schemaFile.replace('.json', '')
       .split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
     
-    const specialFields: CanvasFieldState[] = specialSchemaFields
+    return specialSchemaFields
       .filter((field: any) => field.system?.ask_user !== false)
       .map((field: any) => this.createFieldState(field, schemaName, groupMap, groupOrderMap, groupIconMap, language));
+  }
+
+  private async loadSpecialSchema(schemaFile: string): Promise<void> {
+    const specialFields = await this.prepareSpecialFields(schemaFile);
+    if (!specialFields) return;
 
     const state = this.getCurrentState();
     const allFields = [...state.coreFields, ...specialFields];

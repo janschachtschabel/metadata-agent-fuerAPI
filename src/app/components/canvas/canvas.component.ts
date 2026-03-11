@@ -453,8 +453,11 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges {
     // Subscribe to state changes (always, even if schema load fails)
     this.canvas.state$.pipe(takeUntil(this.destroy$)).subscribe((state: CanvasState) => {
       this.state = state;
-      // Debounce metadataChange emissions (50ms) to avoid flooding the host page
-      if (this._isPrimary) {
+      // Debounce metadataChange emissions (50ms) to avoid flooding the host page.
+      // Skip emission entirely while extracting — the expensive getMetadataForRepository()
+      // + ngZone.run() would cause full CD cycles that block scrolling.
+      // The final emission fires automatically when isExtracting turns false.
+      if (this._isPrimary && !state.isExtracting) {
         clearTimeout(this._metadataChangeTimer);
         this._metadataChangeTimer = setTimeout(() => {
           this.ngZone.run(() => this.metadataChange.emit(this.canvas.getMetadataForRepository()));

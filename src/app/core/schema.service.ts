@@ -53,6 +53,7 @@ export class SchemaService {
   private currentContext: ContextInfo | null = null;
   private coreSchema: CoreSchema | null = null;
   private contentTypeSchemas = new Map<string, FieldDefinition[]>();
+  private contentTypeGroups = new Map<string, any[]>();
   
   private ready$ = new BehaviorSubject<boolean>(false);
 
@@ -140,6 +141,10 @@ export class SchemaService {
       const response = await this.api.getSchema(context, version, schemaFile);
       const fields = response.fields as FieldDefinition[];
       this.contentTypeSchemas.set(schemaFile, fields);
+      // Also cache groups from the same response to avoid a duplicate HTTP call from getGroups()
+      if ((response as any).groups) {
+        this.contentTypeGroups.set(schemaFile, (response as any).groups);
+      }
       this.config.debug(`Content type schema loaded from API: ${schemaFile}`);
       return fields;
     } catch (error) {
@@ -299,11 +304,17 @@ export class SchemaService {
     if (schemaFile === 'core.json' && this.coreSchema) {
       return this.coreSchema.groups;
     }
+    // Use cached content-type groups if available
+    if (this.contentTypeGroups.has(schemaFile)) {
+      return this.contentTypeGroups.get(schemaFile)!;
+    }
     try {
       const context = this.currentContext?.key || 'default';
       const version = this.currentContext?.version || 'latest';
       const response = await this.api.getSchema(context, version, schemaFile);
-      return (response as any).groups || [];
+      const groups = (response as any).groups || [];
+      this.contentTypeGroups.set(schemaFile, groups);
+      return groups;
     } catch {
       return [];
     }
