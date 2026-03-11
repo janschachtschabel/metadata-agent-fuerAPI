@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { WidgetDebug } from './debug';
 
 /**
  * Integration Mode Types
@@ -170,7 +171,7 @@ export class IntegrationModeService {
   
   setMode(mode: IntegrationMode): void {
     this.mode = mode;
-    console.log(`🎯 Integration mode set: ${mode}`);
+    if (WidgetDebug.enabled) console.log(`🎯 Integration mode set: ${mode}`);
   }
   
   isStandalone(): boolean {

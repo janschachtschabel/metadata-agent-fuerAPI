@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import { BehaviorSubject } from 'rxjs';
+import { WidgetDebug } from './debug';
 
 const STORAGE_KEY = 'app_language';
 const SUPPORTED_LANGUAGES = ['de', 'en'];
@@ -73,6 +74,28 @@ export class I18nService {
    */
   getLanguages(): string[] {
     return SUPPORTED_LANGUAGES;
+  }
+
+  /**
+   * Force reload translations (e.g. after api-url becomes available).
+   * Clears ngx-translate cache so DynamicTranslateLoader re-fetches from the API.
+   *
+   * Uses resetLang() + use() instead of reloadLang() because reloadLang()
+   * is unreliable in some ngx-translate versions and may silently keep
+   * the cached (possibly empty) translations.
+   */
+  reloadTranslations(): void {
+    const lang = this.translate.currentLang || this.translate.defaultLang || 'de';
+    if (WidgetDebug.enabled) console.debug(`[i18n] reloadTranslations: resetting "${lang}" cache and re-fetching...`);
+    // Reset ALL cached languages so none keep stale data
+    for (const l of SUPPORTED_LANGUAGES) {
+      this.translate.resetLang(l);
+    }
+    // Re-fetch and activate current language (triggers DynamicTranslateLoader.getTranslation)
+    this.translate.use(lang).subscribe({
+      next: () => { if (WidgetDebug.enabled) console.debug(`[i18n] reloadTranslations: "${lang}" re-loaded successfully`); },
+      error: (err) => { if (WidgetDebug.enabled) console.warn(`[i18n] reloadTranslations: "${lang}" failed`, err); },
+    });
   }
 
   /**

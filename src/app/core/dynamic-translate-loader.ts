@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { TranslateLoader } from '@ngx-translate/core';
 import { Observable, of, ReplaySubject } from 'rxjs';
 import { catchError, switchMap, take } from 'rxjs/operators';
+import { WidgetDebug } from './debug';
 
 /**
  * Custom TranslateLoader that loads i18n files from the API.
@@ -38,13 +39,30 @@ export class DynamicTranslateLoader implements TranslateLoader {
 
     // Local fallback: try ./assets/i18n/ (works on localhost and in
     // Chrome extension sidebar where build-extension.ps1 copies i18n files)
-    const localFallback = () =>
-      this.http.get(`./assets/i18n/${lang}.json`).pipe(catchError(() => of({})));
+    const localFallback = () => {
+      const localUrl = `./assets/i18n/${lang}.json`;
+      if (WidgetDebug.enabled) console.debug(`[i18n] Fallback → ${localUrl}`);
+      return this.http.get(localUrl).pipe(catchError((err) => {
+        if (WidgetDebug.enabled) console.warn(`[i18n] ✗ Fallback failed: ${localUrl}`, err.status);
+        return of({});
+      }));
+    };
+
+    const logSuccess = (url: string) => (data: any) => {
+      if (WidgetDebug.enabled) console.debug(`[i18n] ✓ Loaded ${lang} from ${url} (${Object.keys(data || {}).length} keys)`);
+      return data;
+    };
 
     // apiUrl already known → fetch from API, fallback to local assets
     if (apiUrl) {
-      return this.http.get(`${apiUrl}/widget/assets/i18n/${lang}.json`).pipe(
-        catchError(() => localFallback())
+      const url = `${apiUrl}/widget/assets/i18n/${lang}.json`;
+      if (WidgetDebug.enabled) console.debug(`[i18n] Loading ${lang} from apiUrl: ${url}`);
+      return this.http.get(url).pipe(
+        switchMap(data => of(logSuccess(url)(data))),
+        catchError((err) => {
+          if (WidgetDebug.enabled) console.warn(`[i18n] ✗ Failed: ${url} (${err.status})`, err.message);
+          return localFallback();
+        })
       );
     }
 
@@ -57,7 +75,10 @@ export class DynamicTranslateLoader implements TranslateLoader {
         || window.location.protocol === 'moz-extension:');
 
     if (isExtension) {
-      return this.http.get(`./assets/i18n/${lang}.json`).pipe(
+      const url = `./assets/i18n/${lang}.json`;
+      if (WidgetDebug.enabled) console.debug(`[i18n] Extension mode → ${url}`);
+      return this.http.get(url).pipe(
+        switchMap(data => of(logSuccess(url)(data))),
         catchError(() => of({}))
       );
     }
@@ -66,19 +87,32 @@ export class DynamicTranslateLoader implements TranslateLoader {
       // Try origin-based API path first (works when widget is served from subdirectory),
       // then fall back to local ./assets/i18n/ (works with ng serve)
       const origin = window.location.origin;
-      return this.http.get(`${origin}/widget/assets/i18n/${lang}.json`).pipe(
-        catchError(() => localFallback())
+      const url = `${origin}/widget/assets/i18n/${lang}.json`;
+      if (WidgetDebug.enabled) console.debug(`[i18n] Local mode → ${url}`);
+      return this.http.get(url).pipe(
+        switchMap(data => of(logSuccess(url)(data))),
+        catchError((err) => {
+          if (WidgetDebug.enabled) console.warn(`[i18n] ✗ Failed: ${url} (${err.status})`);
+          return localFallback();
+        })
       );
     }
 
     // Web-component mode: wait for apiUrl, then fetch from API (fallback to local)
+    if (WidgetDebug.enabled) console.debug(`[i18n] Deferred mode — waiting for apiUrl...`);
     return DynamicTranslateLoader.apiUrl$.pipe(
       take(1),
-      switchMap(url =>
-        this.http.get(`${url}/widget/assets/i18n/${lang}.json`).pipe(
-          catchError(() => localFallback())
-        )
-      )
+      switchMap(url => {
+        const fullUrl = `${url}/widget/assets/i18n/${lang}.json`;
+        if (WidgetDebug.enabled) console.debug(`[i18n] apiUrl received → ${fullUrl}`);
+        return this.http.get(fullUrl).pipe(
+          switchMap(data => of(logSuccess(fullUrl)(data))),
+          catchError((err) => {
+            if (WidgetDebug.enabled) console.warn(`[i18n] ✗ Failed: ${fullUrl} (${err.status})`, err.message);
+            return localFallback();
+          })
+        );
+      })
     );
   }
 }

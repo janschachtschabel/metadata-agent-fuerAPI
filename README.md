@@ -304,6 +304,29 @@ Fusszeile mit Feld-Statistik und Aktions-Buttons (nur im Default-Layout).
 | `context-name` | `contextName` | string | `'default'` | Schema-Kontext |
 | `schema-version` | `schemaVersion` | string | `'latest'` | Schema-Version |
 
+#### Multi-Instanz
+
+| HTML-Attribut | Angular Input | Typ | Default | Beschreibung |
+|---------------|---------------|-----|---------|--------------|
+| `instance-id` | `instanceId` | string | `'default'` | Instanz-Kennung fuer Multi-Instanz-Betrieb |
+
+**Verhalten:**
+- **Kein Attribut:** Alle Komponenten teilen `"default"` (rueckwaertskompatibel)
+- **Gleiche ID:** Geteilter State, Events feuern nur 1× (Primary-Komponente)
+- **Verschiedene IDs:** Komplett isolierter State + eigene Events
+
+```html
+<!-- Isolierte Instanzen -->
+<metadata-agent-canvas api-url="..." instance-id="editor-a" layout="default"></metadata-agent-canvas>
+<metadata-agent-canvas api-url="..." instance-id="editor-b" layout="plugin"></metadata-agent-canvas>
+
+<!-- Synchrone Instanzen (geteilter State, keine doppelten Events) -->
+<metadata-agent-canvas api-url="..." instance-id="shared" layout="default"></metadata-agent-canvas>
+<metadata-agent-canvas api-url="..." instance-id="shared" layout="plugin"></metadata-agent-canvas>
+```
+
+**Runtime-Wechsel:** `document.querySelector('metadata-agent-canvas').instanceId = 'new-id';`
+
 #### Layout & Darstellung
 
 | HTML-Attribut | Angular Input | Typ | Default | Beschreibung |
@@ -314,7 +337,7 @@ Fusszeile mit Feld-Statistik und Aktions-Buttons (nur im Default-Layout).
 | `columns` | `columns` | 1-4 | Layout | Spaltenanzahl |
 | `background-color` | `backgroundColor` | string | `''` | CSS-Hintergrundfarbe |
 | `input-mode` | `inputMode` | string | `'text'` | `'text'`, `'url'`, `'nodeId'` |
-| `highlight-ai` | `highlightAi` | boolean | `true` | KI-Felder violett hervorheben |
+| `highlight-ai` | `highlightAi` | boolean | `false` | KI-Felder violett hervorheben |
 | `flat-groups` | `flatGroups` | boolean | `false` | Feldgruppen pro Schema zusammenfassen |
 | `viewer-mode` | `viewerMode` | boolean | `false` | Legacy: setzt `readonly=true` |
 
@@ -347,6 +370,19 @@ Fusszeile mit Feld-Statistik und Aktions-Buttons (nur im Default-Layout).
 | `enable-screenshot` | `enableScreenshot` | boolean | `true` | Automatische Screenshot-Erzeugung bei URL-Extraktion |
 | `screenshot-method` | `screenshotMethod` | string | `'pageshot'` | Screenshot-Methode: `'pageshot'` oder `'playwright'` |
 | `preview-image` | `previewImage` | string | - | Vorschaubild direkt als Base64 Data-URL setzen |
+
+#### Debug
+
+| HTML-Attribut | Angular Input | Typ | Default | Beschreibung |
+|---------------|---------------|-----|---------|--------------|
+| `debug` | `debug` | boolean | `false` | Aktiviert Debug-Logging in der Browser-Konsole (i18n-Ladepfade, apiUrl, instanceId, Events) |
+
+```html
+<!-- Debug aktivieren -->
+<metadata-agent-canvas api-url="..." debug="true"></metadata-agent-canvas>
+```
+
+Per JavaScript: `element.debug = true;` / `element.debug = false;`
 
 #### Daten
 
@@ -531,13 +567,24 @@ const canvas = document.querySelector('metadata-agent-canvas');
 // Metadaten haben sich geaendert (bei jeder Feld-Aenderung)
 canvas.addEventListener('metadataChange', (e) => {
   console.log('Metadaten:', e.detail);
-  // e.detail = { contextName, schemaVersion, metadataset, language, metadata: {...}, _origins: {...} }
+  // e.detail = {
+  //   contextName, schemaVersion, metadataset, metadataset_uri,
+  //   language, exportedAt,
+  //   metadata: { "cclom:title": [...], ... },   // nur echte Felder
+  //   _origins: { "cclom:title": "ai", ... },     // nur Top-Level (kein Duplikat in metadata)
+  //   _source_text: "...",                         // Rohtext (falls vorhanden)
+  //   preview_image_url: "data:image/png;base64,..." // Screenshot (falls vorhanden)
+  // }
+  
+  // Inhaltstyp nach Extraktion auslesen:
+  const contentType = e.detail.metadataset;       // z.B. "event.json"
+  const contentTypeUri = e.detail.metadataset_uri; // z.B. "http://w3id.org/openeduhub/vocabs/contentTypes/event"
 });
 
 // Benutzer hat "Speichern" geklickt (Submit)
 canvas.addEventListener('metadataSubmit', (e) => {
   console.log('Submit:', e.detail);
-  // e.detail = vollstaendiges Metadaten-Objekt
+  // e.detail = gleiches Format wie metadataChange
 });
 
 // Upload-Ergebnis (nach Repository-Upload)
@@ -632,15 +679,18 @@ http://localhost:4200/?highlightAi=false
 
 ### Origin-Tracking im Export-Format
 
-Beim Export (`metadataChange`, `metadataSubmit`, JSON-Download) wird ein `_origins`-Dict mitgeliefert, das die Herkunft jedes Feldes speichert:
+Beim Export (`metadataChange`, `metadataSubmit`, JSON-Download) wird ein `_origins`-Dict mitgeliefert, das die Herkunft jedes Feldes speichert.
+
+**Wichtig:** `_origins` und `_source_text` liegen **nur auf Top-Level** — sie werden **nicht** in `metadata` dupliziert. Das `metadata`-Objekt enthaelt ausschliesslich echte Metadaten-Felder.
 
 ```json
 {
   "contextName": "default",
-  "schemaVersion": "v1.8.0",
+  "schemaVersion": "v1.8.1",
   "metadataset": "event.json",
+  "metadataset_uri": "http://w3id.org/openeduhub/vocabs/contentTypes/event",
   "language": "de",
-  "exportedAt": "2026-02-10T15:26:00.000Z",
+  "exportedAt": "2026-03-10T15:26:00.000Z",
   "metadata": {
     "cclom:title": ["Mein Titel"],
     "ccm:taxonid": ["Mathematik"]
@@ -648,7 +698,8 @@ Beim Export (`metadataChange`, `metadataSubmit`, JSON-Download) wird ein `_origi
   "_origins": {
     "cclom:title": "ai",
     "ccm:taxonid": "user"
-  }
+  },
+  "_source_text": "Workshop KI in der Bildung am 15. Maerz 2026..."
 }
 ```
 
@@ -671,17 +722,54 @@ schema:location (Ort)
   -> Geo-Koordinaten -> Breitengrad, Laengengrad
 ```
 
+## Debugging / Troubleshooting
+
+### i18n-Uebersetzungen
+
+Die Webkomponente loggt alle i18n-Ladeaufrufe in die Browser-Konsole (F12):
+
+```
+[i18n] Loading de from http://localhost:8000/widget/assets/i18n/de.json
+[i18n] ✓ Loaded de from http://localhost:8000/widget/assets/i18n/de.json (12 keys)
+```
+
+Bei Fehlern:
+
+```
+[i18n] ✗ Failed: http://localhost:8000/widget/assets/i18n/de.json (404)
+[i18n] Fallback → ./assets/i18n/de.json
+```
+
+**Haeufige Ursachen:**
+- `api-url` fehlt oder falsch → die Webkomponente versucht `/widget/assets/i18n/de.json` relativ zur API-URL
+- i18n-Dateien fehlen auf dem Server → `src/static/widget/assets/i18n/de.json` + `en.json` muessen vorhanden sein
+- CORS-Probleme → API muss CORS-Header setzen (FastAPI macht das standardmaessig)
+- **Mixed Content** → Wird die Webkomponente auf einer **HTTPS-Seite** eingebettet, muss `api-url` ebenfalls HTTPS sein. Browser blockieren HTTP-Requests von HTTPS-Seiten stillschweigend. Eine bare IP wie `http://192.168.1.100:8000` funktioniert **nicht** — Loesung: Reverse-Proxy (nginx/Caddy) mit Domain + TLS-Zertifikat vor den Docker-Container stellen.
+
+### Multi-Instanz Debug
+
+Bei Instanz-Wechseln loggt die Komponente:
+
+```
+[canvas-0] instanceId setter called: "shared" (current: "default")
+[canvas-0] → bound to instance "shared", isPrimary=true
+```
+
+---
+
 ## Projektstruktur
 
 ```
 src/app/
 ├── core/                              # Services
 │   ├── api.service.ts                 # HTTP-Kommunikation mit API (+Upload)
-│   ├── canvas.service.ts              # State-Management
+│   ├── canvas.service.ts              # State-Management (instance-aware)
+│   ├── instance-registry.ts           # Multi-Instanz State-Registry
 │   ├── schema.service.ts              # Schema-Laden
 │   ├── shape-expander.service.ts      # Subfield-Expansion
 │   ├── field-validation.service.ts    # Validierung
 │   ├── layout.service.ts              # Layout-Verwaltung
+│   ├── dynamic-translate-loader.ts    # i18n-Loader (deferred, mit Debug-Logging)
 │   └── i18n.service.ts                # Sprach-Management (DE/EN)
 ├── components/
 │   ├── canvas/                        # Orchestrator (leitet an Layout weiter)

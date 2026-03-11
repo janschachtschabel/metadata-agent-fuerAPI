@@ -42,7 +42,6 @@
 // ===== FIELDS SECTION =====
 .fields-section {
   flex: 1;
-  overflow-y: auto;
   padding: 4px;
 }
 
@@ -156,14 +155,15 @@
 
 // ===== FLOATING CONTROLS =====
 .floating-controls {
-  position: fixed;
+  position: sticky;
   bottom: 16px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1000;
+  z-index: 100;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 12px;
+  width: fit-content;
+  margin: 0 auto;
   animation: slideUp 0.3s ease-out;
   
   .floating-content-type {

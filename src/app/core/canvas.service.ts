@@ -1,5 +1,6 @@
 import { Injectable, NgZone } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 import { 
   CanvasState, 
   CanvasFieldState, 
@@ -12,18 +13,27 @@ import { ApiService, GenerateResponse } from './api.service';
 import { I18nService } from './i18n.service';
 import { LoggerService } from './logger.service';
 import { ShapeExpanderService } from './shape-expander.service';
+import { InstanceRegistry } from './instance-registry';
 
 /**
  * Canvas Service - Simplified State Management
  * Uses API for all AI operations, no local LLM calls
  */
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class CanvasService {
-  private stateSubject = new BehaviorSubject<CanvasState>(createInitialState());
-  public state$: Observable<CanvasState> = this.stateSubject.asObservable();
+  private stateSubject: BehaviorSubject<CanvasState>;
+
+  /**
+   * Proxy that emits the current stateSubject.
+   * switchMap in state$ automatically re-subscribes when stateSubject is swapped
+   * (e.g. when instance changes at runtime).
+   */
+  private stateProxy$: BehaviorSubject<BehaviorSubject<CanvasState>>;
 
   /** Cache field values per content type so switching back restores them */
-  private fieldValueCache = new Map<string, { values: Record<string, any>, origins: Record<string, boolean> }>();
+  private fieldValueCache: Map<string, { values: Record<string, any>, origins: Record<string, boolean> }>;
+
+  private _instanceId = 'default';
 
   constructor(
     private schema: SchemaService,
@@ -33,7 +43,38 @@ export class CanvasService {
     private shapeExpander: ShapeExpanderService,
     private ngZone: NgZone
   ) {
+    // Start with own state; bindToInstance() will swap to shared state
+    this.stateSubject = new BehaviorSubject<CanvasState>(createInitialState());
+    this.stateProxy$ = new BehaviorSubject(this.stateSubject);
+    this.fieldValueCache = new Map();
     this.logger.info('CanvasService initialized (API mode)');
+  }
+
+  /**
+   * Bind this service instance to a shared instance scope.
+   * Two CanvasComponents with the same instanceId share one
+   * BehaviorSubject (state) and one fieldValueCache.
+   */
+  bindToInstance(instanceId: string): void {
+    this._instanceId = instanceId;
+    const shared = InstanceRegistry.getOrCreate(instanceId);
+    this.stateSubject = shared.stateSubject;
+    this.fieldValueCache = shared.fieldValueCache;
+    // Notify proxy so existing subscriptions (via state$) switch to the new subject
+    this.stateProxy$.next(this.stateSubject);
+    this.logger.info(`CanvasService bound to instance "${instanceId}"`);
+  }
+
+  get instanceId(): string {
+    return this._instanceId;
+  }
+
+  /**
+   * Observable of state — automatically follows the current stateSubject,
+   * even when bindToInstance() swaps it at runtime.
+   */
+  get state$(): Observable<CanvasState> {
+    return this.stateProxy$.pipe(switchMap(subj => subj.asObservable()));
   }
 
   getCurrentState(): CanvasState {
@@ -68,7 +109,10 @@ export class CanvasService {
     const hasExistingData = Object.keys(existingMetadata).length > 0;
     
     if (hasExistingData) {
-      this.logger.debug('Re-extraction with existing metadata:', Object.keys(existingMetadata).length, 'fields');
+      const fieldKeys = Object.keys(existingMetadata).filter(k => !k.startsWith('_'));
+      console.log('🔄 RE-EXTRACTION: existing_metadata keys:', fieldKeys);
+      console.log('🔄 RE-EXTRACTION: existing_metadata sample:', JSON.stringify(existingMetadata, null, 2).substring(0, 2000));
+      this.logger.debug('Re-extraction with existing metadata:', fieldKeys.length, 'field keys');
     }
 
     this.updateState({
@@ -253,7 +297,12 @@ export class CanvasService {
 
     // Update content type if detected
     if (response.metadataset && response.metadataset !== 'core.json') {
-      await this.loadSpecialSchema(response.metadataset);
+      // Only reload schema if content type changed (skip on re-extraction with same schema
+      // to preserve existing field values that may not be in the API response)
+      const isNewSchema = state.selectedContentType !== response.metadataset;
+      if (isNewSchema) {
+        await this.loadSpecialSchema(response.metadataset);
+      }
       
       // Get label and icon for detected content type
       const concept = this.schema.getContentTypeConcepts().find(c => c.schema_file === response.metadataset);
@@ -269,11 +318,15 @@ export class CanvasService {
     // Re-fetch state after potential schema load
     const currentState = this.getCurrentState();
 
+    // Use _origins from API response to correctly track AI vs user fields
+    const origins = response._origins;
+
     // Update all fields with values from API (with subfield expansion for complex objects)
     const updatedCoreFields = (currentState.coreFields || []).map(field => {
       const value = metadata[field.fieldId];
       if (value !== undefined && value !== null) {
-        return this.applyValueToField(field, value);
+        const isAi = origins ? origins[field.fieldId] !== 'user' : true;
+        return this.applyValueToField(field, value, isAi);
       }
       return field;
     });
@@ -281,7 +334,8 @@ export class CanvasService {
     const updatedSpecialFields = (currentState.specialFields || []).map(field => {
       const value = metadata[field.fieldId];
       if (value !== undefined && value !== null) {
-        return this.applyValueToField(field, value);
+        const isAi = origins ? origins[field.fieldId] !== 'user' : true;
+        return this.applyValueToField(field, value, isAi);
       }
       return field;
     });
@@ -290,16 +344,32 @@ export class CanvasService {
     const visibleFields = this.getCountableFields(allFields);
     const filledFields = visibleFields.filter(f => f.status === FieldStatus.FILLED).length;
 
+    // Strip internal meta-keys (e.g. _origins, _source_text) from metadata
+    // to prevent duplication when exporting later
+    const cleanMetadata: Record<string, any> = {};
+    for (const [key, value] of Object.entries(metadata)) {
+      if (!key.startsWith('_')) {
+        cleanMetadata[key] = value;
+      }
+    }
+
     // Build state update
     const stateUpdate: any = {
       coreFields: updatedCoreFields,
       specialFields: updatedSpecialFields,
       fieldGroups: this.groupFields(allFields),
-      metadata: metadata,
+      metadata: cleanMetadata,
       filledFields,
       totalFields: visibleFields.length,
       extractionProgress: 100
     };
+
+    // Store source text from API response so it accumulates for re-extraction.
+    // On re-extraction the API returns the combined original+instruction text,
+    // which becomes the source context for the next correction cycle.
+    if (response._source_text) {
+      stateUpdate.userText = response._source_text;
+    }
 
     // Set preview image URL if returned by API (async screenshot during generation)
     if (response.preview_image_url) {
@@ -338,6 +408,24 @@ export class CanvasService {
         }
         metadata[field.fieldId] = field.value;
       }
+    }
+
+    // Include _origins so the API can preserve user/ai tracking during re-extraction
+    const origins: Record<string, 'ai' | 'user'> = {};
+    for (const field of allFields) {
+      if (field.status === FieldStatus.FILLED) {
+        origins[field.fieldId] = field.isAiGenerated ? 'ai' : 'user';
+      }
+    }
+    if (Object.keys(origins).length > 0) {
+      metadata['_origins'] = origins;
+    }
+
+    // Include the original source text so the API can combine it with a new
+    // correction instruction during re-extraction (source text "fortschreiben")
+    const sourceText = state.userText;
+    if (sourceText) {
+      metadata['_source_text'] = sourceText;
     }
 
     return metadata;
@@ -719,11 +807,20 @@ export class CanvasService {
     const visibleFields = this.getCountableFields(allFields);
     const filledFields = visibleFields.filter(f => f.status === FieldStatus.FILLED).length;
 
+    // Strip internal meta-keys (_origins, _source_text) from metadata
+    // to prevent duplication when exporting later
+    const cleanMetadata: Record<string, any> = {};
+    for (const [key, value] of Object.entries(metadata)) {
+      if (!key.startsWith('_')) {
+        cleanMetadata[key] = value;
+      }
+    }
+
     this.updateState({
       coreFields: updatedCoreFields,
       specialFields: updatedSpecialFields,
       fieldGroups: this.groupFields(allFields),
-      metadata: metadata,
+      metadata: cleanMetadata,
       filledFields,
       totalFields: visibleFields.length
     });
@@ -746,7 +843,13 @@ export class CanvasService {
     const allFields = [...state.coreFields, ...state.specialFields];
     
     // Reconstruct complex objects from subfields
-    const exportMetadata: Record<string, any> = { ...state.metadata };
+    // Also strip internal meta-keys (_origins, _source_text) to prevent duplication
+    const exportMetadata: Record<string, any> = {};
+    for (const [key, value] of Object.entries(state.metadata)) {
+      if (!key.startsWith('_')) {
+        exportMetadata[key] = value;
+      }
+    }
     for (const field of allFields) {
       if (field.isParent && field.subFields) {
         exportMetadata[field.fieldId] = this.shapeExpander.reconstructObjectFromSubFields(field, allFields);
@@ -855,8 +958,16 @@ export class CanvasService {
     this.logger.info('Importing JSON data');
     const metadata = data['metadata'] || data;
     const schemaFile = data['metadataset'] || data['metadataset_uri'] || data['schemaFile'];
-    const origins: Record<string, 'ai' | 'user'> | undefined = data['_origins'];
+    // Read _origins from top level (new format) or from inside metadata (old format)
+    const origins: Record<string, 'ai' | 'user'> | undefined =
+      data['_origins'] || metadata['_origins'];
     await this.loadMetadata(metadata, schemaFile, origins);
+
+    // Restore source text if present (top level or inside metadata for backward compat)
+    const sourceText = data['_source_text'] || metadata['_source_text'];
+    if (sourceText) {
+      this.updateState({ userText: sourceText });
+    }
 
     // Set preview image URL if present in imported data (screenshot base64 or URL)
     const previewImageUrl = data['preview_image_url'] || metadata['preview_image_url'];

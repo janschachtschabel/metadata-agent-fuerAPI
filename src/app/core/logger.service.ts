@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { environment } from '../../environments/environment';
+import { WidgetDebug } from './debug';
 
 type LogLevel = 'error' | 'warn' | 'info' | 'debug';
 
@@ -28,7 +29,10 @@ export class LoggerService {
   }
 
   private shouldLog(level: LogLevel): boolean {
-    return LOG_LEVELS[level] <= this.currentLevel;
+    if (LOG_LEVELS[level] > this.currentLevel) return false;
+    // 'debug' level only when debug mode is active
+    if (level === 'debug' && !WidgetDebug.enabled) return false;
+    return true;
   }
 
   error(message: string, ...args: any[]): void {

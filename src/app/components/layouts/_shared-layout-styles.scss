@@ -30,6 +30,7 @@ $shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
   flex-direction: column;
   height: 100%;
   width: 100%;
+  overflow-y: auto;
   background: $surface-variant;
   color: $text-primary;
   font-family: 'Inter', 'Roboto', sans-serif;
@@ -240,14 +241,15 @@ $shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
 
 // ===== FLOATING CONTROLS =====
 @mixin floating-controls {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1000;
+  position: sticky;
+  bottom: 16px;
+  z-index: 100;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 16px;
+  width: fit-content;
+  margin: 0 auto;
   animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 

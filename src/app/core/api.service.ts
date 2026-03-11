@@ -81,6 +81,8 @@ export interface GenerateResponse {
   language: string;
   exportedAt: string;
   metadata: Record<string, any>;
+  _origins?: Record<string, 'ai' | 'user'>;
+  _source_text?: string;
   preview_image_url?: string;
   processing: {
     success: boolean;
@@ -296,7 +298,7 @@ export class ApiService {
       
       // Extract metadata fields from root level (API returns them flat)
       const metadata: Record<string, any> = {};
-      const systemKeys = ['contextName', 'schemaVersion', 'metadataset', 'metadataset_uri', 'language', 'exportedAt', 'processing', 'preview_image_url'];
+      const systemKeys = ['contextName', 'schemaVersion', 'metadataset', 'metadataset_uri', 'language', 'exportedAt', 'processing', 'preview_image_url', '_origins', '_source_text'];
       
       for (const [key, value] of Object.entries(rawResponse)) {
         if (!systemKeys.includes(key)) {
@@ -313,6 +315,8 @@ export class ApiService {
         exportedAt: rawResponse.exportedAt,
         processing: rawResponse.processing,
         metadata: metadata,
+        _origins: (rawResponse as any)._origins || undefined,
+        _source_text: (rawResponse as any)._source_text || undefined,
         preview_image_url: (rawResponse as any).preview_image_url || undefined
       };
       

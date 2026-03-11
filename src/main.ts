@@ -5,6 +5,7 @@ import { CanvasComponent } from './app/components/canvas/canvas.component';
 import { AppComponent } from './app/app.component';
 
 import { WIDGET_VERSION } from './app/version';
+import { WidgetDebug } from './app/core/debug';
 
 /**
  * Ensure Google Material Icons fonts are loaded.

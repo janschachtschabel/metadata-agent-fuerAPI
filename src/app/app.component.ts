@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { CanvasComponent } from './components/canvas/canvas.component';
+import { WidgetDebug } from './core/debug';
 
 /**
  * Root App Component
@@ -174,14 +175,14 @@ export class AppComponent implements OnInit {
     if (dataUrl) {
       this.http.get<Record<string, unknown>>(dataUrl).subscribe({
         next: (data) => {
-          console.log('� Loaded data from:', dataUrl);
+          if (WidgetDebug.enabled) console.log('📦 Loaded data from:', dataUrl);
           this.metadataInput = data;
         },
         error: (err) => console.error('Failed to load dataUrl:', dataUrl, err)
       });
     }
     
-    console.log('�📋 App Config from URL:', {
+    if (WidgetDebug.enabled) console.log('📋 App Config from URL:', {
       apiUrl: this.apiUrl || '(environment default)',
       context: this.contextName,
       version: this.schemaVersion,

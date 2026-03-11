@@ -23,6 +23,8 @@ import { ApiService } from '../../core/api.service';
 import { LayoutService } from '../../core/layout.service';
 import { I18nService } from '../../core/i18n.service';
 import { DynamicTranslateLoader } from '../../core/dynamic-translate-loader';
+import { InstanceRegistry } from '../../core/instance-registry';
+import { WidgetDebug } from '../../core/debug';
 import { CanvasState, ContentType } from '../../shared/models/canvas.models';
 import { LayoutConfig, DEFAULT_LAYOUT } from '../../shared/layouts';
 import { DefaultLayoutComponent } from '../layouts/default-layout/default-layout.component';
@@ -58,24 +60,61 @@ import { PrueftischOrgLayoutComponent } from '../layouts/prueftisch-org-layout/p
   ],
   templateUrl: './canvas.component.html',
   styleUrls: ['./canvas.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [CanvasService]
 })
 export class CanvasComponent implements OnInit, OnDestroy, OnChanges {
   /** Readable widget version (accessible via element.version) */
   readonly version = WIDGET_VERSION;
+
+  /** Unique component ID for event deduplication across same-instance components */
+  private static _nextId = 0;
+  private _componentId = `canvas-${CanvasComponent._nextId++}`;
+  private _instanceId = 'default';
+  private _isPrimary = true;
 
   @HostBinding('class.borderless') get isBorderless(): boolean {
     return this._borderless === true || (this._borderless === undefined && this._layout.style.borderless);
   }
 
   // ===== INPUT PROPERTIES =====
+
+  /**
+   * Instance ID for multi-instance support.
+   * - Different IDs → fully isolated state & events.
+   * - Same ID       → shared state, events fire only once (from the primary component).
+   * - Default: 'default' (backward-compatible — all untagged components share state).
+   */
+  @Input() set instanceId(value: string) {
+    if (WidgetDebug.enabled) console.log(`[${this._componentId}] instanceId setter called: "${value}" (current: "${this._instanceId}")`);
+    if (value && value !== this._instanceId) {
+      // Unregister from old instance
+      InstanceRegistry.unregister(this._instanceId, this._componentId);
+      this._instanceId = value;
+      this.canvas.bindToInstance(value);
+      this._isPrimary = InstanceRegistry.register(value, this._componentId);
+      if (WidgetDebug.enabled) console.log(`[${this._componentId}] → bound to instance "${value}", isPrimary=${this._isPrimary}`);
+    }
+  }
   
+  /**
+   * Enable debug logging to the browser console.
+   * HTML: debug="true"  /  JS: element.debug = true
+   * Default: false (no debug output).
+   */
+  @Input() set debug(value: boolean | string | undefined) {
+    if (value === undefined || value === null) return;
+    WidgetDebug.enabled = value === true || value === 'true';
+  }
+
   @Input() set apiUrl(value: string) {
+    if (WidgetDebug.enabled) console.log(`[${this._componentId}] apiUrl setter called: "${value}"`);
     if (value) {
       this._apiUrl = value;
       this.apiService.setApiUrl(value);
-      // Set API URL for i18n loader (triggers deferred translation fetch)
+      // Set API URL for i18n loader and force reload so cached empty translations are replaced
       DynamicTranslateLoader.setApiUrl(value);
+      this.i18n.reloadTranslations();
     }
   }
   
@@ -352,7 +391,11 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges {
     public i18n: I18nService,
     private cdr: ChangeDetectorRef,
     private ngZone: NgZone
-  ) {}
+  ) {
+    // Bind to default instance and register for event dedup
+    this.canvas.bindToInstance(this._instanceId);
+    this._isPrimary = InstanceRegistry.register(this._instanceId, this._componentId);
+  }
   
   // ===== PLUGIN EVENT BRIDGE =====
   // CustomEvent-based extraction trigger — much more reliable than @Input setters
@@ -366,7 +409,7 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges {
   @HostListener('plugin-extract', ['$event'])
   onPluginExtract(event: CustomEvent): void {
     const { text, url, inputMode, reset } = event.detail || {};
-    console.log('📩 plugin-extract event received:', { textLength: text?.length, url, inputMode, reset });
+    if (WidgetDebug.enabled) console.log('📩 plugin-extract event received:', { textLength: text?.length, url, inputMode, reset });
 
     // Reset state if requested (new URL)
     if (reset) {
@@ -399,7 +442,10 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges {
     // Subscribe to state changes (always, even if schema load fails)
     this.canvas.state$.pipe(takeUntil(this.destroy$)).subscribe((state: CanvasState) => {
       this.state = state;
-      this.metadataChange.emit(this.canvas.getMetadataForRepository());
+      // Only the primary component per instance emits events (prevents duplicates)
+      if (this._isPrimary) {
+        this.metadataChange.emit(this.canvas.getMetadataForRepository());
+      }
       this.cdr.markForCheck();
     });
     
@@ -437,59 +483,65 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges {
   }
   
   ngOnDestroy(): void {
+    InstanceRegistry.unregister(this._instanceId, this._componentId);
     this.destroy$.next();
     this.destroy$.complete();
   }
   
   // ===== ACTIONS =====
   
-  private async triggerAutoExtract(): Promise<void> {
+  private triggerAutoExtract(): void {
     if (!this._autoExtractPending) return;
     this._autoExtractPending = false;
     
-    console.log('🤖 Auto-extract triggered:', { mode: this._inputMode, hasText: !!this.userText, hasUrl: !!this.sourceUrl });
+    if (WidgetDebug.enabled) console.log('🤖 Auto-extract triggered:', { mode: this._inputMode, hasText: !!this.userText, hasUrl: !!this.sourceUrl });
     
     if (this._inputMode === 'url' && this.sourceUrl.trim()) {
-      await this.startUrlExtraction(this.sourceUrl);
+      this.startUrlExtraction(this.sourceUrl);
     } else if (this._inputMode === 'nodeId' && this.nodeId.trim()) {
-      await this.startNodeIdExtraction(this.nodeId);
+      this.startNodeIdExtraction(this.nodeId);
     } else if (this.userText.trim()) {
-      await this.startExtraction();
+      this.startExtraction();
     } else if (this.sourceUrl.trim()) {
       // Fallback: if text mode but no text, try URL
-      await this.startUrlExtraction(this.sourceUrl);
+      this.startUrlExtraction(this.sourceUrl);
     }
   }
   
-  async startExtraction(): Promise<void> {
+  startExtraction(): void {
     if (!this.userText.trim()) {
       alert(this.i18n.instant('ALERTS.INPUT_REQUIRED'));
       return;
     }
-    
-    await this.canvas.startExtraction(this.userText);
-    this.userText = ''; // Clear after extraction
-    this.cdr.markForCheck();
+    const text = this.userText;
+    this.userText = ''; // Clear immediately
+    // Run outside Angular zone so zone.js doesn't track it as a long task
+    this.ngZone.runOutsideAngular(() => setTimeout(async () => {
+      await this.canvas.startExtraction(text);
+      this.ngZone.run(() => this.cdr.markForCheck());
+    }));
   }
   
-  async startUrlExtraction(url: string): Promise<void> {
+  startUrlExtraction(url: string): void {
     if (!url.trim()) {
       alert(this.i18n.instant('ALERTS.INPUT_REQUIRED'));
       return;
     }
-    
-    await this.canvas.startUrlExtraction(url);
-    this.cdr.markForCheck();
+    this.ngZone.runOutsideAngular(() => setTimeout(async () => {
+      await this.canvas.startUrlExtraction(url);
+      this.ngZone.run(() => this.cdr.markForCheck());
+    }));
   }
   
-  async startNodeIdExtraction(nodeId: string): Promise<void> {
+  startNodeIdExtraction(nodeId: string): void {
     if (!nodeId.trim()) {
       alert(this.i18n.instant('ALERTS.INPUT_REQUIRED'));
       return;
     }
-    
-    await this.canvas.startNodeIdExtraction(nodeId);
-    this.cdr.markForCheck();
+    this.ngZone.runOutsideAngular(() => setTimeout(async () => {
+      await this.canvas.startNodeIdExtraction(nodeId);
+      this.ngZone.run(() => this.cdr.markForCheck());
+    }));
   }
   
   async selectContentType(contentType: ContentType): Promise<void> {
@@ -510,7 +562,9 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges {
   
   submit(): void {
     const metadata = this.canvas.getMetadataForRepository();
-    this.metadataSubmit.emit(metadata);
+    if (this._isPrimary) {
+      this.metadataSubmit.emit(metadata);
+    }
   }
   
   async uploadToRepository(repository: 'staging' | 'prod' = 'staging'): Promise<void> {

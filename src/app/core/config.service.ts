@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { WidgetDebug } from './debug';
 
 /**
  * Log Level Enum
@@ -29,6 +30,8 @@ export class ConfigService {
 
   log(message: string, level: LogLevel = LogLevel.INFO, ...args: unknown[]): void {
     if (level > this.logLevel) return;
+    // DEBUG/VERBOSE only when debug mode is active
+    if (level >= LogLevel.DEBUG && !WidgetDebug.enabled) return;
 
     const prefix = this.getLogPrefix(level);
     
