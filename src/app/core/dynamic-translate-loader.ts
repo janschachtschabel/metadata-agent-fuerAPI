@@ -64,7 +64,7 @@ export class DynamicTranslateLoader implements TranslateLoader {
 
     // apiUrl already known → fetch from API, fallback to local assets
     if (apiUrl) {
-      const url = `${apiUrl}/widget/assets/i18n/${lang}.json`;
+      const url = `${apiUrl}/widget/i18n/${lang}.json`;
       if (WidgetDebug.enabled) console.debug(`[i18n] Loading ${lang} from apiUrl: ${url}`);
       return this.http.get(url).pipe(
         switchMap(data => of(logSuccess(url)(data))),
@@ -97,14 +97,14 @@ export class DynamicTranslateLoader implements TranslateLoader {
 
     if (isLocal) {
       // Try local ./assets/i18n/ first (works with ng serve),
-      // then fall back to origin-based /widget/assets/i18n/ (works when API serves widget)
+      // then fall back to origin-based /widget/i18n/ (canonical API endpoint)
       const localUrl = `./assets/i18n/${lang}.json`;
       if (WidgetDebug.enabled) console.debug(`[i18n] Local mode → ${localUrl}`);
       return this.http.get(localUrl).pipe(
         switchMap(data => of(logSuccess(localUrl)(data))),
         catchError(() => {
           const origin = window.location.origin;
-          const widgetUrl = `${origin}/widget/assets/i18n/${lang}.json`;
+          const widgetUrl = `${origin}/widget/i18n/${lang}.json`;
           if (WidgetDebug.enabled) console.debug(`[i18n] Local fallback → ${widgetUrl}`);
           return this.http.get(widgetUrl).pipe(
             switchMap(data => of(logSuccess(widgetUrl)(data))),
@@ -122,7 +122,7 @@ export class DynamicTranslateLoader implements TranslateLoader {
     return DynamicTranslateLoader.apiUrl$.pipe(
       take(1),
       switchMap(url => {
-        const fullUrl = `${url}/widget/assets/i18n/${lang}.json`;
+        const fullUrl = `${url}/widget/i18n/${lang}.json`;
         if (WidgetDebug.enabled) console.debug(`[i18n] apiUrl received → ${fullUrl}`);
         return this.http.get(fullUrl).pipe(
           switchMap(data => of(logSuccess(fullUrl)(data))),

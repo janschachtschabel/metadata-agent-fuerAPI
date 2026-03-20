@@ -218,7 +218,7 @@
         rows="1"
         cdkTextareaAutosize
         cdkAutosizeMinRows="1"
-        cdkAutosizeMaxRows="5"
+        [cdkAutosizeMaxRows]="readonly ? 50 : 5"
         [(ngModel)]="inputValue"
         (input)="onInput($event)"
         (blur)="onBlur()"

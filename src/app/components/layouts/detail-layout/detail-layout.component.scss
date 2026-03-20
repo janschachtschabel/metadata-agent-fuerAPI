@@ -115,6 +115,8 @@
 ::ng-deep app-field {
   display: block;
   margin-bottom: 0;
+  min-width: 0;
+  overflow: hidden;
 
   .canvas-field {
     padding: 0;
@@ -212,7 +214,20 @@
     white-space: pre-line;
     word-break: break-word;
     overflow-wrap: break-word;
-    overflow: visible !important;
+    overflow: hidden !important;
+  }
+
+  // Textareas: override CDK autosize inline height so full content shows
+  textarea.mat-mdc-input-element {
+    height: auto !important;
+    field-sizing: content !important;
+    min-height: 24px !important;
+  }
+
+  // Inputs: break long URLs/text within column bounds
+  input.mat-mdc-input-element {
+    word-break: break-all !important;
+    white-space: normal !important;
   }
 
   // Hide datepicker toggles and suffixes
