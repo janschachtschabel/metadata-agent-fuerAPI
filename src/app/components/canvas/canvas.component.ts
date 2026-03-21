@@ -473,7 +473,7 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges {
 
     try {
       // Initialize schema context with optional version
-      await this.schema.setContext(this._contextName, this._schemaVersion !== 'latest' ? this._schemaVersion : undefined);
+      await this.schema.setContext(this._contextName, this._schemaVersion);
       await this.schema.loadCoreSchema();
       
       // Load content types

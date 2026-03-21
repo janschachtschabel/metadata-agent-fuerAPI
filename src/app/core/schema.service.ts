@@ -101,7 +101,7 @@ export class SchemaService {
   }
 
   getSchemaVersion(): string {
-    return this.currentContext?.version ? `v${this.currentContext.version}` : 'v1.8.0';
+    return this.currentContext?.version ? `v${this.currentContext.version}` : 'vlatest';
   }
 
   // ===== Schema Loading (via API) =====
